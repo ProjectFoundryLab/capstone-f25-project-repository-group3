@@ -1,9 +1,16 @@
+import { useNavigate } from 'react-router-dom' // or your router
 import { supabase } from '../lib/supabaseClient'
 
 export default function Dashboard() {
+  const navigate = useNavigate()
+
   const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    window.location.reload()
+    const { error } = await supabase.auth.signOut()
+    if (error) {
+      console.error('Error signing out:', error)
+    } else {
+      navigate('/auth') // or '/' for home page
+    }
   }
 
   return (
