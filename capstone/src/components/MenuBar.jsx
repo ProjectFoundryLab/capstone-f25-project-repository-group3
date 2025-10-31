@@ -43,7 +43,7 @@ export default function MenuBar() {
     );
 
     return (
-        <aside className="w-64 h-screen bg-gray-800 text-white flex flex-col flex-shrink-0">
+        <aside className="w-65 h-screen bg-gray-800 text-white flex flex-col flex-shrink-0">
             <div className="p-4 border-b border-gray-700">
                 <h1 className="text-2xl font-bold text-white">ITAM System</h1>
             </div>
