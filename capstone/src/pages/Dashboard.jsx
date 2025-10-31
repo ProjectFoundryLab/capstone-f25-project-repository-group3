@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import MenuBar from '../components/MenuBar'
+import Ribbon from '../components/Ribbon'
 
 export default function Dashboard() {
   const [user, setUser] = useState(null)
@@ -53,6 +54,7 @@ export default function Dashboard() {
 
   return (
     <>
+      <Ribbon />
       <MenuBar />
       <button onClick={handleSignOut}>Sign out</button>
     </>
