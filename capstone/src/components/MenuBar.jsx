@@ -5,9 +5,12 @@ import {
     Calendar, ClipboardList, Trash2, Edit
 } from 'lucide-react';
 import { useState } from 'react';
+import { supabase } from '../lib/supabaseClient'
+import { useNavigate } from 'react-router-dom'
 
 export default function MenuBar() {
     const [currentPage, setCurrentPage] = useState()
+    const navigate = useNavigate()
 
     const navItems = [
         { name: 'Dashboard', icon: BarChart2, page: 'Dashboard' },
@@ -42,9 +45,21 @@ export default function MenuBar() {
         </a>
     );
 
+    const handleSignOut = async () => {
+        try {
+            const { error } = await supabase.auth.signOut()
+            if (error) throw error
+            navigate('/auth')
+        } catch (error) {
+            console.error('Error signing out:', error.message)
+            // Even if there's an error, redirect to auth
+            navigate('/auth')
+        }
+    }
+
     return (
         <aside className="w-65 h-screen bg-gray-800 text-white flex flex-col flex-shrink-0">
-            <div className="p-4 border-b border-gray-700">
+            <div className="p-4">
                 <h1 className="text-2xl font-bold text-white">ITAM System</h1>
             </div>
             <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
@@ -53,6 +68,7 @@ export default function MenuBar() {
             <div className="p-2 border-t border-gray-700">
                  {helpItems.map(item => <NavLink key={item.name} item={item} />)}
             </div>
+            <button onClick={handleSignOut}>Sign out</button>
         </aside>
     );
 }

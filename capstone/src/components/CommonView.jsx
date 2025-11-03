@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import MenuBar from '../components/MenuBar'
-import Ribbon from '../components/Ribbon'
+import ContentWindow from './ContentWindow'
+import Ribbon from './Ribbon'
 
 export default function Dashboard() {
   const [user, setUser] = useState(null)
@@ -32,18 +33,6 @@ export default function Dashboard() {
     return () => subscription.unsubscribe()
   }, [navigate])
 
-  const handleSignOut = async () => {
-    try {
-      const { error } = await supabase.auth.signOut()
-      if (error) throw error
-      navigate('/auth')
-    } catch (error) {
-      console.error('Error signing out:', error.message)
-      // Even if there's an error, redirect to auth
-      navigate('/auth')
-    }
-  }
-
   if (loading) {
     return <div style={{ padding: 20 }}>Loading...</div>
   }
@@ -53,10 +42,12 @@ export default function Dashboard() {
   }
 
   return (
-    <>
-      <Ribbon />
+    <div className='flex flex-row'>
       <MenuBar />
-      <button onClick={handleSignOut}>Sign out</button>
-    </>
+      <div className='flex-grow'>
+        <Ribbon />
+        <ContentWindow />
+      </div>
+    </div>
   )
 }

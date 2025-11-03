@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import AuthPage from './pages/AuthPage'
-import Dashboard from './pages/Dashboard'
+import CommonView from './components/CommonView'
 import PrivateRoute from './components/PrivateRoute'
 
 export default function App() {
@@ -12,7 +12,7 @@ export default function App() {
           path="/"
           element={
             <PrivateRoute>
-              <Dashboard />
+              <CommonView />
             </PrivateRoute>
           }
         />
