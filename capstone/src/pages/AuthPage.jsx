@@ -120,22 +120,6 @@ export default function AuthPage() {
                 >
                     {loading ? 'Loading...' : (isSignUp ? 'Sign Up' : 'Sign In')}
                 </button>
-
-                <p className="text-center text-sm text-slate-400">
-                    {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
-                    <button
-                        onClick={() => {
-                            setIsSignUp(!isSignUp)
-                            setError('')
-                            setEmail('')
-                            setPassword('')
-                            setConfirmPassword('')
-                        }}
-                        className="text-blue-400 hover:text-blue-300"
-                    >
-                        {isSignUp ? 'Sign in' : 'Sign up'}
-                    </button>
-                </p>
             </div>
         </div>
         </div>
