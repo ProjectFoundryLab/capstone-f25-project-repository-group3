@@ -2,8 +2,12 @@ import { useState, useEffect, useRef } from "react";
 import { Search, Bell, User, ChevronDown, QrCode, X } from "lucide-react";
 import { Html5Qrcode } from "html5-qrcode";
 import Button from "./Button";
+import { useAuth } from "../context/AuthContext";
+import { supabase } from "../lib/supabaseClient";
 
 export default function Ribbon() {
+    const { user } = useAuth();
+    const [displayName, setDisplayName] = useState("");
     const [showScanner, setShowScanner] = useState(false);
     const [scanResult, setScanResult] = useState("");
     const scannerRef = useRef(null);
@@ -17,6 +21,32 @@ export default function Ribbon() {
         setShowScanner(false);
         setScanResult("");
     };
+
+    useEffect(() => {
+        const fetchDisplayName = async () => {
+            if (user?.id) {
+                try {
+                    const { data, error } = await supabase
+                        .from("profiles")
+                        .select("display_name")
+                        .eq("id", user.id)
+                        .single();
+
+                    if (error) {
+                        console.error("Error fetching display name:", error);
+                        setDisplayName(user.email || "User");
+                    } else if (data) {
+                        setDisplayName(data.display_name || user.email || "User");
+                    }
+                } catch (err) {
+                    console.error("Error:", err);
+                    setDisplayName(user.email || "User");
+                }
+            }
+        };
+
+        fetchDisplayName();
+    }, [user?.id]);
 
     useEffect(() => {
         if (showScanner && scannerRef.current && !html5QrCodeRef.current) {
@@ -74,7 +104,7 @@ export default function Ribbon() {
                     <Bell className="text-gray-500 w-6 h-6 hover:text-gray-800 cursor-pointer" />
                     <div className="flex items-center space-x-2 cursor-pointer">
                         <User className="text-gray-500 w-6 h-6 rounded-full bg-gray-200 p-1" />
-                        <span className="text-sm font-medium">Admin User</span>
+                        <span className="text-sm font-medium">{displayName || "User"}</span>
                         <ChevronDown className="w-4 h-4 text-gray-500" />
                     </div>
                 </div>
