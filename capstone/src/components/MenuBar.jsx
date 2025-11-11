@@ -4,12 +4,10 @@ import {
     QrCode, X, Camera, Printer, Building, UserCheck, Mail, MapPin, ShoppingCart, DollarSign,
     Calendar, ClipboardList, Trash2, Edit
 } from 'lucide-react';
-import { useState } from 'react';
 import { supabase } from '../lib/supabaseClient'
 import { useNavigate } from 'react-router-dom'
 
-export default function MenuBar() {
-    const [currentPage, setCurrentPage] = useState()
+export default function MenuBar(props) {
     const navigate = useNavigate()
 
     const navItems = [
@@ -29,13 +27,13 @@ export default function MenuBar() {
         { name: 'Settings', icon: Settings, page: 'Settings' },
     ];
 
-    const NavLink = ({ item }) => (
+    const NavLink = ({ item, onClick }) => (
          <a 
             href="#" 
             key={item.name} 
-            onClick={() => setCurrentPage(item.page)} 
+            onClick={onClick}
             className={`flex items-center px-3 py-2 text-sm rounded-md transition-colors ${
-                currentPage === item.page 
+                props.currentPage === item.page 
                 ? 'bg-gray-900 text-white' 
                 : 'text-gray-300 hover:bg-gray-700 hover:text-white'
             }`}
@@ -63,10 +61,10 @@ export default function MenuBar() {
                 <h1 className="text-2xl font-bold text-white">ITAM System</h1>
             </div>
             <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
-                {navItems.map(item => <NavLink key={item.name} item={item} />)}
+                {navItems.map(item => <NavLink key={item.name} item={item} onClick={() => props.setCurrentPage(item.name)} />)}
             </nav>
             <div className="p-2 border-t border-gray-700">
-                 {helpItems.map(item => <NavLink key={item.name} item={item} />)}
+                 {helpItems.map(item => <NavLink key={item.name} item={item} onClick={() => props.setCurrentPage(item.name)} />)}
             </div>
             <button onClick={handleSignOut}>Sign out</button>
         </aside>

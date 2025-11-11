@@ -2,10 +2,9 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import MenuBar from '../components/MenuBar'
-import ContentWindow from './ContentWindow'
 import Ribbon from './Ribbon'
 
-export default function Dashboard() {
+export default function CommonView(props) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
@@ -38,15 +37,17 @@ export default function Dashboard() {
   }
 
   if (!user) {
-    return null // Don't show anything while redirecting
+    return null
   }
 
   return (
     <div className='flex flex-row'>
-      <MenuBar />
+      <MenuBar currentPage={props.currentPage} setCurrentPage={props.setCurrentPage} />
       <div className='flex-grow'>
         <Ribbon />
-        <ContentWindow />
+        <main className="h-fit">
+          {props.currentPage}
+        </main>
       </div>
     </div>
   )
