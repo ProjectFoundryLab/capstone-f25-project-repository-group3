@@ -4,6 +4,7 @@ import { Html5Qrcode } from "html5-qrcode";
 import Button from "./Button";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../lib/supabaseClient";
+import { useNavigate } from "react-router-dom";
 
 export default function Ribbon() {
     const { user } = useAuth();
@@ -12,6 +13,21 @@ export default function Ribbon() {
     const [scanResult, setScanResult] = useState("");
     const scannerRef = useRef(null);
     const html5QrCodeRef = useRef(null);
+    const profileRef = useRef(null);
+    const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+    const navigate = useNavigate();
+
+    const handleSignOut = async () => {
+        try {
+            const { error } = await supabase.auth.signOut();
+            if (error) throw error;
+            navigate('/auth');
+        } catch (err) {
+            console.error('Error signing out:', err?.message ?? err);
+            // redirect to auth even if there's an error
+            navigate('/auth');
+        }
+    };
 
     const onScanClick = () => {
         setShowScanner(true);
@@ -86,6 +102,18 @@ export default function Ribbon() {
         };
     }, [showScanner]);
 
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (profileRef.current && !profileRef.current.contains(e.target)) {
+                setShowProfileDropdown(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
     return (
         <>
             <header className="bg-white border-b border-gray-200 p-4 flex justify-between items-center">
@@ -102,10 +130,31 @@ export default function Ribbon() {
                         Scan Asset
                     </Button>
                     <Bell className="text-gray-500 w-6 h-6 hover:text-gray-800 cursor-pointer" />
-                    <div className="flex items-center space-x-2 cursor-pointer">
-                        <User className="text-gray-500 w-6 h-6 rounded-full bg-gray-200 p-1" />
-                        <span className="text-sm font-medium">{displayName || "User"}</span>
-                        <ChevronDown className="w-4 h-4 text-gray-500" />
+                    <div className="relative" ref={profileRef}>
+                        <div
+                            className="flex items-center space-x-2 cursor-pointer"
+                            onClick={() => setShowProfileDropdown((s) => !s)}
+                            role="button"
+                            tabIndex={0}
+                        >
+                            <User className="text-gray-500 w-6 h-6 rounded-full bg-gray-200 p-1" />
+                            <span className="text-sm font-medium">{displayName || "User"}</span>
+                            <ChevronDown className="w-4 h-4 text-gray-500" />
+                        </div>
+
+                        {showProfileDropdown && (
+                            <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-md shadow-lg z-50">
+                                <button
+                                    onClick={() => {
+                                        setShowProfileDropdown(false);
+                                        handleSignOut();
+                                    }}
+                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                >
+                                    Sign out
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </header>

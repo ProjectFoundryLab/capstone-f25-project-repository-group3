@@ -1,12 +1,8 @@
 import { 
     BarChart2, HardDrive, Users, LifeBuoy, Settings, Package, Bookmark, Wrench, Shield, Building, ShoppingCart
 } from 'lucide-react';
-import { supabase } from '../lib/supabaseClient'
-import { useNavigate } from 'react-router-dom'
 
 export default function MenuBar(props) {
-    const navigate = useNavigate()
-
     const navItems = [
         { name: 'Dashboard', icon: BarChart2, page: 'Dashboard' },
         { name: 'Assets', icon: HardDrive, page: 'Assets' },
@@ -40,18 +36,6 @@ export default function MenuBar(props) {
         </a>
     );
 
-    const handleSignOut = async () => {
-        try {
-            const { error } = await supabase.auth.signOut()
-            if (error) throw error
-            navigate('/auth')
-        } catch (error) {
-            console.error('Error signing out:', error.message)
-            // Even if there's an error, redirect to auth
-            navigate('/auth')
-        }
-    }
-
     return (
         <aside className="w-65 h-screen bg-gray-800 text-white flex flex-col flex-shrink-0">
             <div className="p-4">
@@ -63,7 +47,6 @@ export default function MenuBar(props) {
             <div className="p-2 border-t border-gray-700">
                  {helpItems.map(item => <NavLink key={item.name} item={item} onClick={() => props.setCurrentPage(item.name)} />)}
             </div>
-            <button onClick={handleSignOut}>Sign out</button>
         </aside>
     );
 }
