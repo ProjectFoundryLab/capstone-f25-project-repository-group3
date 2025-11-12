@@ -1,8 +1,5 @@
 import { 
-    Search, Bell, User, ChevronDown, PlusCircle, Sliders, BarChart2, HardDrive, Users, Folder, 
-    LifeBuoy, Settings, Package, FileText, Bookmark, Wrench, Tag, Shield, ChevronsUpDown, 
-    QrCode, X, Camera, Printer, Building, UserCheck, Mail, MapPin, ShoppingCart, DollarSign,
-    Calendar, ClipboardList, Trash2, Edit
+    BarChart2, HardDrive, Users, LifeBuoy, Settings, Package, Bookmark, Wrench, Shield, Building, ShoppingCart
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient'
 import { useNavigate } from 'react-router-dom'

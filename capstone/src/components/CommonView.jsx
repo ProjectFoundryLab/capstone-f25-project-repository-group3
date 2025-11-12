@@ -81,11 +81,11 @@ export default function CommonView(props) {
   }
 
   return (
-    <div className='flex flex-row'>
+    <div className='flex flex-row bg-gray-100'>
       <MenuBar currentPage={props.currentPage} setCurrentPage={props.setCurrentPage} />
       <div className='flex-grow'>
         <Ribbon />
-        <main className="h-fit">
+        <main className="flex-1 p-6 overflow-y-auto">
           {renderPage()}
         </main>
       </div>
