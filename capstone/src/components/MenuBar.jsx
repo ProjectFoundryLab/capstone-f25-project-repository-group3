@@ -16,8 +16,8 @@ export default function MenuBar(props) {
     ];
 
     const helpItems = [
-        { name: 'Support', icon: LifeBuoy, page: 'Support' },
-        { name: 'Settings', icon: Settings, page: 'Settings' },
+        { name: 'Support', icon: LifeBuoy, page: 'Support' }
+        //{ name: 'Settings', icon: Settings, page: 'Settings' },
     ];
 
     const NavLink = ({ item, onClick }) => (

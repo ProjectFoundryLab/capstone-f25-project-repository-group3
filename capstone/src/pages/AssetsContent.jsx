@@ -1,6 +1,7 @@
-import { HardDrive, ChevronsUpDown, QrCode } from "lucide-react";
+import { HardDrive, ChevronsUpDown, QrCode, Sliders, PlusCircle, Printer } from "lucide-react";
 import WindowSection from "../components/WindowSection";
 import Tag from "../components/Tag";
+import Button from "../components/Button";
 
 export default function AssetsContent() {
     const getStatusColor = (status) => {
@@ -21,9 +22,19 @@ export default function AssetsContent() {
         { id: 'ASSET005', model: 'Latitude 7420', category: 'Laptop', status: 'In Repair', user: 'p.jones', location: 'IT Workshop', purchaseDate: '2023-02-28', warrantyEnd: '2026-02-27' },
     ];
 
+    const buttons = () => {
+        return (
+            <div className="flex space-x-2">
+                <Button variant="secondary" icon={Printer}>Print Labels</Button>
+                <Button variant="secondary" icon={Sliders}>Filters</Button>
+                <Button icon={PlusCircle}>New Asset</Button>
+            </div>
+        )
+    }
+
     return (
         <div className="assets-container">
-            <WindowSection title="All Assets" icon={HardDrive}>
+            <WindowSection title="All Assets" icon={HardDrive} buttons={buttons()}>
                 <table className="w-full text-sm text-left text-gray-500">
                     <thead className="text-xs text-gray-700 uppercase bg-gray-50">
                         <tr>
