@@ -116,7 +116,7 @@ export default function Ribbon() {
 
     return (
         <>
-            <header className="bg-white border-b border-gray-200 p-4 flex justify-between items-center">
+            <header className="sticky top-0 z-30 bg-white border-b border-gray-200 p-4 flex justify-between items-center">
                 <div className="relative w-full max-w-md">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                     <input

@@ -1,6 +1,5 @@
 import { MessageSquare, Send } from "lucide-react";
 import WindowSection from "../components/WindowSection";
-import Button from "../components/Button";
 
 export default function SupportContent() {
     return (
