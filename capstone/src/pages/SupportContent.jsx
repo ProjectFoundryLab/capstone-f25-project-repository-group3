@@ -74,7 +74,7 @@ export default function SupportContent() {
 
         try {
             await createTodoistTask();
-            setMessage({ type: 'success', text: 'Ticket created successfully in Todoist!' });
+            setMessage({ type: 'success', text: 'Ticket created successfully!' });
             setFormData({ asset: '', priority: 'Low', subject: '', description: '' });
         } catch (error) {
             console.error('Error creating ticket:', error);
