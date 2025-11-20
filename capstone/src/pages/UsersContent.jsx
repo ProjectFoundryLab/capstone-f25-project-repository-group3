@@ -48,7 +48,8 @@ export default function UsersContent() {
                             <th scope="col" className="px-6 py-3">Name</th>
                             <th scope="col" className="px-6 py-3">Email</th>
                             <th scope="col" className="px-6 py-3">Department</th>
-                            <th scope="col" className="px-6 py-3">Location</th>
+                            <th scope="col" className="px-6 py-3">Role</th>
+                            <th scope="col" className="px-6 py-3">Manager</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -58,6 +59,7 @@ export default function UsersContent() {
                                 <td className="px-6 py-4">{user.email}</td>
                                 <td className="px-6 py-4">{user.department_name}</td>
                                 <td className="px-6 py-4">{user.user_type}</td>
+                                <td className="px-6 py-4">{user.managed_by}</td>
                             </tr>
                         ))}
                     </tbody>
