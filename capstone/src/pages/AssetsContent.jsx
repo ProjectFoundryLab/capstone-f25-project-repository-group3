@@ -8,7 +8,7 @@ import Tag from "../components/Tag";
 import Button from "../components/Button";
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
-//import QRCode from "qrcode";
+import QRCode from "qrcode";
 
 export default function AssetsContent() {
 
@@ -23,6 +23,7 @@ export default function AssetsContent() {
     const [people, setPeople] = useState([]);
     const [filteredPeople, setFilteredPeople] = useState([]);
     const [costCenters, setCostCenters] = useState([]);
+    const [locations, setLocations] = useState([]);
 
     const [form, setForm] = useState({
         model_id: "",
@@ -41,27 +42,30 @@ export default function AssetsContent() {
     }, []);
 
     async function fetchDropdownData() {
-        let { data: modelData } = await supabase.from("asset_models").select("*").order("name");
-        let { data: deptData } = await supabase.from("departments").select("*").order("name");
-        let { data: peopleData } = await supabase.from("people").select("*").eq("is_active", true);
-        let { data: ccData } = await supabase.from("cost_centers").select("*").order("name");
+        const { data: modelData } = await supabase.from("asset_models").select("*").order("name");
+        const { data: deptData } = await supabase.from("departments").select("*").order("name");
+        const { data: peopleData } = await supabase.from("people").select("*").eq("is_active", true);
+        const { data: ccData } = await supabase.from("cost_centers").select("*").order("name");
+        const { data: locData } = await supabase.from("locations").select("*").order("name");
 
         setModels(modelData || []);
         setDepartments(deptData || []);
         setPeople(peopleData || []);
         setCostCenters(ccData || []);
+        setLocations(locData || []);
     }
 
     async function fetchAssets() {
         try {
             setLoading(true);
             const { data, error } = await supabase
-                .from('v_assets_detailed')
-                .select('*')
-                .order('purchase_date', { ascending: false });
+                .from("v_assets_detailed")
+                .select("*")
+                .order("purchase_date", { ascending: false });
 
             if (error) throw error;
             setAssets(data);
+
         } catch (err) {
             setError(err.message);
         } finally {
@@ -81,7 +85,6 @@ export default function AssetsContent() {
 
     function handleChange(e) {
         const { name, value } = e.target;
-
         setForm(prev => ({ ...prev, [name]: value }));
 
         if (name === "department_id") {
@@ -103,15 +106,31 @@ export default function AssetsContent() {
         return `${model.sku}-${count}`;
     }
 
-    /*
-    async function uploadQrCode(assetId) {
-        const qrData = `${window.location.origin}/asset/${assetId}`;
+    async function uploadQrCode(assetInfo) {
+        const payload = {
+            id: assetInfo.id,
+            asset_tag: assetInfo.asset_tag,
+            model: assetInfo.model_name,
+            manufacturer: assetInfo.manufacturer,
+            category: assetInfo.category_name,
+            state: assetInfo.state,
+            condition: assetInfo.condition,
+            location: assetInfo.location_name,
+            assigned_to: assetInfo.assigned_to_person,
+            assigned_email: assetInfo.assigned_to_email,
+            assigned_date: assetInfo.assigned_date
+        };
 
-        const pngDataUrl = await QRCode.toDataURL(qrData);
+        const qrJson = JSON.stringify(payload);
+
+        const pngDataUrl = await QRCode.toDataURL(qrJson, {
+            errorCorrectionLevel: "M"
+        });
+
         const base64 = pngDataUrl.split(",")[1];
         const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
 
-        const path = `${assetId}.png`;
+        const path = `${assetInfo.id}.png`;
 
         const { error: uploadError } = await supabase.storage
             .from("asset-qrcodes")
@@ -127,32 +146,31 @@ export default function AssetsContent() {
             .getPublicUrl(path);
 
         return urlData.publicUrl;
-    } */
+    }
 
     async function submitForm() {
-    const tag = await generateAssetTag(form.model_id);
+        const tag = await generateAssetTag(form.model_id);
 
-    // 1. Insert asset
-    const { data: inserted, error: insertError } = await supabase
-        .from("assets")
-        .insert([
-            {
-                model_id: form.model_id,
-                cost_center_id: form.cost_center_id,
-                department_id: form.department_id,
-                asset_tag: tag,
-                serial_number: tag,  // serial = asset_tag
-                purchase_date: form.purchase_date || null,
-                cost: form.cost || null,
-                currency: "USD",
-                notes: form.notes || null,
-                location_id: form.location_id || null,
-                state: "in_use",
-                condition: "excellent",
-            }
-        ])
-        .select()
-        .single();
+        const { data: inserted, error: insertError } = await supabase
+            .from("assets")
+            .insert([
+                {
+                    model_id: form.model_id,
+                    cost_center_id: form.cost_center_id,
+                    department_id: form.department_id,
+                    asset_tag: tag,
+                    serial_number: tag,
+                    purchase_date: form.purchase_date || null,
+                    cost: form.cost || null,
+                    currency: "USD",
+                    notes: form.notes || null,
+                    location_id: form.location_id || null,
+                    state: "in_use",
+                    condition: "excellent",
+                }
+            ])
+            .select()
+            .single();
 
         if (insertError) {
             alert("Error creating asset: " + insertError.message);
@@ -161,23 +179,6 @@ export default function AssetsContent() {
 
         const assetId = inserted.id;
 
-        // 2. Generate + upload QR code
-        let qrUrl;
-        try {
-            qrUrl = await uploadQrCode(assetId);
-        } catch (err) {
-            alert("Asset created but QR upload failed: " + err.message);
-        }
-
-        // 3. Update asset with QR code URL
-        if (qrUrl) {
-            await supabase
-                .from("assets")
-                .update({ qr_code_url: qrUrl })
-                .eq("id", assetId);
-        }
-
-        // 4. Assign to user (if provided)
         if (form.person_id) {
             const { error: assignError } = await supabase
                 .from("asset_assignments")
@@ -194,10 +195,29 @@ export default function AssetsContent() {
             }
         }
 
+        const { data: detailed } = await supabase
+            .from("v_assets_detailed")
+            .select("*")
+            .eq("id", assetId)
+            .single();
+
+        let qrUrl;
+        try {
+            qrUrl = await uploadQrCode(detailed);
+        } catch (err) {
+            alert("Asset created but QR upload failed: " + err.message);
+        }
+
+        if (qrUrl) {
+            await supabase
+                .from("assets")
+                .update({ qr_code_url: qrUrl })
+                .eq("id", assetId);
+        }
+
         setShowForm(false);
         await fetchAssets();
     }
-
 
     function getStatusColor(status) {
         const map = {
@@ -212,8 +232,8 @@ export default function AssetsContent() {
 
     return (
         <div className="assets-container">
-
-            {/* -------- CREATE ASSET MODAL -------- */}
+            
+            {/* CREATE ASSET MODAL */}
             {showForm && (
                 <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
                     <div className="bg-white p-6 rounded-lg w-full max-w-lg shadow-xl border">
@@ -274,12 +294,14 @@ export default function AssetsContent() {
                                 >
                                     <option value="">Select Department</option>
                                     {departments.map(d => (
-                                        <option key={d.id} value={d.id}>{d.name}</option>
+                                        <option key={d.id} value={d.id}>
+                                            {d.name}
+                                        </option>
                                     ))}
                                 </select>
                             </div>
 
-                            {/* PEOPLE */}
+                            {/* PERSON */}
                             <div>
                                 <label className="block text-sm">Assign To</label>
                                 <select
@@ -293,6 +315,24 @@ export default function AssetsContent() {
                                     {filteredPeople.map(p => (
                                         <option key={p.id} value={p.id}>
                                             {p.first_name} {p.last_name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* LOCATION */}
+                            <div>
+                                <label className="block text-sm">Location</label>
+                                <select
+                                    name="location_id"
+                                    value={form.location_id}
+                                    onChange={handleChange}
+                                    className="w-full border p-2 rounded"
+                                >
+                                    <option value="">Select Location</option>
+                                    {locations.map(loc => (
+                                        <option key={loc.id} value={loc.id}>
+                                            {loc.name}
                                         </option>
                                     ))}
                                 </select>
@@ -343,7 +383,7 @@ export default function AssetsContent() {
                 </div>
             )}
 
-            {/* -------- ASSETS TABLE -------- */}
+            {/* ASSET TABLE */}
             <WindowSection title="All Assets" icon={HardDrive} buttons={buttons()}>
                 <h1>{error}</h1>
 
@@ -373,16 +413,17 @@ export default function AssetsContent() {
                                 </td>
                                 <td className="px-6 py-4">
                                     {asset.assigned_to_person || (
-                                        <span className="italic text-gray-400">Unassigned</span>
+                                        <span className="italic text-gray-400">
+                                            Unassigned
+                                        </span>
                                     )}
                                 </td>
                             </tr>
                         ))}
                     </tbody>
-
                 </table>
-            </WindowSection>
 
+            </WindowSection>
         </div>
     );
 }

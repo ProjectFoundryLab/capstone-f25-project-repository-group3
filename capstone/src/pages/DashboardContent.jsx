@@ -91,7 +91,6 @@ export default function DashboardContent() {
             <div className="flex flex-wrap gap-4 items-stretch">
                 <Card title="Total Assets" val={metrics[0]} />
                 <Card title="In Use" val={metrics[1]} />
-                <Card title="In Stock" val={metrics[2]} />
                 <Card title="Retired" val={metrics[3]} />
             </div>
 
