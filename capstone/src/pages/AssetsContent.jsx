@@ -8,7 +8,7 @@ import Tag from "../components/Tag";
 import Button from "../components/Button";
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
-import QRCode from "qrcode";
+//import QRCode from "qrcode";
 
 export default function AssetsContent() {
 
@@ -103,6 +103,7 @@ export default function AssetsContent() {
         return `${model.sku}-${count}`;
     }
 
+    /*
     async function uploadQrCode(assetId) {
         const qrData = `${window.location.origin}/asset/${assetId}`;
 
@@ -126,7 +127,7 @@ export default function AssetsContent() {
             .getPublicUrl(path);
 
         return urlData.publicUrl;
-    }
+    } */
 
     async function submitForm() {
     const tag = await generateAssetTag(form.model_id);
