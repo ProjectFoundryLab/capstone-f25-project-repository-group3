@@ -1,104 +1,387 @@
-import { HardDrive, ChevronsUpDown, QrCode, Sliders, PlusCircle, Printer } from "lucide-react";
+import {
+    HardDrive,
+    PlusCircle,
+    X
+} from "lucide-react";
 import WindowSection from "../components/WindowSection";
 import Tag from "../components/Tag";
 import Button from "../components/Button";
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
+import QRCode from "qrcode";
 
 export default function AssetsContent() {
-    const buttons = () => {
-        return (
-            <div className="flex space-x-2">
-                <Button icon={PlusCircle}>New Asset</Button>
-            </div>
-        )
-    }
 
     const [assets, setAssets] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    const [showForm, setShowForm] = useState(false);
+
+    const [models, setModels] = useState([]);
+    const [departments, setDepartments] = useState([]);
+    const [people, setPeople] = useState([]);
+    const [filteredPeople, setFilteredPeople] = useState([]);
+    const [costCenters, setCostCenters] = useState([]);
+
+    const [form, setForm] = useState({
+        model_id: "",
+        cost_center_id: "",
+        department_id: "",
+        person_id: "",
+        purchase_date: "",
+        cost: "",
+        notes: "",
+        location_id: "",
+    });
+
     useEffect(() => {
         fetchAssets();
+        fetchDropdownData();
     }, []);
-    
+
+    async function fetchDropdownData() {
+        let { data: modelData } = await supabase.from("asset_models").select("*").order("name");
+        let { data: deptData } = await supabase.from("departments").select("*").order("name");
+        let { data: peopleData } = await supabase.from("people").select("*").eq("is_active", true);
+        let { data: ccData } = await supabase.from("cost_centers").select("*").order("name");
+
+        setModels(modelData || []);
+        setDepartments(deptData || []);
+        setPeople(peopleData || []);
+        setCostCenters(ccData || []);
+    }
+
     async function fetchAssets() {
         try {
-        setLoading(true);
-        
-        // 1. Query the VIEW exactly like a table
-        const { data, error } = await supabase
-            .from('v_assets_detailed') 
-            .select('*')
-            .order('purchase_date', { ascending: false }); // Optional sorting
+            setLoading(true);
+            const { data, error } = await supabase
+                .from('v_assets_detailed')
+                .select('*')
+                .order('purchase_date', { ascending: false });
 
-        if (error) throw error;
-        setAssets(data);
-        
-        } catch (error) {
-            setError(error.message);
+            if (error) throw error;
+            setAssets(data);
+        } catch (err) {
+            setError(err.message);
         } finally {
             setLoading(false);
         }
     }
 
-    const getStatusColor = (status) => {
-        const map = {
-        in_use: 'green',       // active
-        in_stock: 'blue',      // ready
-        maintenance: 'red',    // issue
-        retired: 'gray',       // dead
-        lost: 'red',           // alert
-        };
+    function buttons() {
+        return (
+            <div className="flex space-x-2">
+                <Button icon={PlusCircle} onClick={() => setShowForm(true)}>
+                    New Asset
+                </Button>
+            </div>
+        );
+    }
 
-        return map[status] || 'default';
-    };
+    function handleChange(e) {
+        const { name, value } = e.target;
+
+        setForm(prev => ({ ...prev, [name]: value }));
+
+        if (name === "department_id") {
+            setFilteredPeople(
+                people.filter(p => p.department_id === value)
+            );
+        }
+    }
+
+    async function generateAssetTag(modelId) {
+        const model = models.find(m => m.id === modelId);
+        if (!model || !model.sku) return null;
+
+        const { count } = await supabase
+            .from("assets")
+            .select("id", { count: "exact", head: true })
+            .ilike("asset_tag", `${model.sku}-%`);
+
+        return `${model.sku}-${count}`;
+    }
+
+    async function uploadQrCode(assetId) {
+        const qrData = `${window.location.origin}/asset/${assetId}`;
+
+        const pngDataUrl = await QRCode.toDataURL(qrData);
+        const base64 = pngDataUrl.split(",")[1];
+        const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+
+        const path = `${assetId}.png`;
+
+        const { error: uploadError } = await supabase.storage
+            .from("asset-qrcodes")
+            .upload(path, bytes, {
+                contentType: "image/png",
+                upsert: true
+            });
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+            .from("asset-qrcodes")
+            .getPublicUrl(path);
+
+        return urlData.publicUrl;
+    }
+
+    async function submitForm() {
+    const tag = await generateAssetTag(form.model_id);
+
+    // 1. Insert asset
+    const { data: inserted, error: insertError } = await supabase
+        .from("assets")
+        .insert([
+            {
+                model_id: form.model_id,
+                cost_center_id: form.cost_center_id,
+                department_id: form.department_id,
+                asset_tag: tag,
+                serial_number: tag,  // serial = asset_tag
+                purchase_date: form.purchase_date || null,
+                cost: form.cost || null,
+                currency: "USD",
+                notes: form.notes || null,
+                location_id: form.location_id || null,
+                state: "in_use",
+                condition: "excellent",
+            }
+        ])
+        .select()
+        .single();
+
+        if (insertError) {
+            alert("Error creating asset: " + insertError.message);
+            return;
+        }
+
+        const assetId = inserted.id;
+
+        // 2. Generate + upload QR code
+        let qrUrl;
+        try {
+            qrUrl = await uploadQrCode(assetId);
+        } catch (err) {
+            alert("Asset created but QR upload failed: " + err.message);
+        }
+
+        // 3. Update asset with QR code URL
+        if (qrUrl) {
+            await supabase
+                .from("assets")
+                .update({ qr_code_url: qrUrl })
+                .eq("id", assetId);
+        }
+
+        // 4. Assign to user (if provided)
+        if (form.person_id) {
+            const { error: assignError } = await supabase
+                .from("asset_assignments")
+                .insert([
+                    {
+                        asset_id: assetId,
+                        type: "user",
+                        person_id: form.person_id
+                    }
+                ]);
+
+            if (assignError) {
+                alert("Asset created, but assignment failed: " + assignError.message);
+            }
+        }
+
+        setShowForm(false);
+        await fetchAssets();
+    }
+
+
+    function getStatusColor(status) {
+        const map = {
+            in_use: "green",
+            in_stock: "blue",
+            maintenance: "red",
+            retired: "gray",
+            lost: "red",
+        };
+        return map[status] || "default";
+    }
 
     return (
         <div className="assets-container">
+
+            {/* -------- CREATE ASSET MODAL -------- */}
+            {showForm && (
+                <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
+                    <div className="bg-white p-6 rounded-lg w-full max-w-lg shadow-xl border">
+
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-lg font-semibold">Create Asset</h2>
+                            <button onClick={() => setShowForm(false)}>
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="space-y-3">
+
+                            {/* MODEL */}
+                            <div>
+                                <label className="block text-sm">Model</label>
+                                <select
+                                    name="model_id"
+                                    value={form.model_id}
+                                    onChange={handleChange}
+                                    className="w-full border p-2 rounded"
+                                >
+                                    <option value="">Select Model</option>
+                                    {models.map(m => (
+                                        <option key={m.id} value={m.id}>
+                                            {m.name} {m.vendor ? `(${m.vendor})` : ""}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* COST CENTER */}
+                            <div>
+                                <label className="block text-sm">Cost Center</label>
+                                <select
+                                    name="cost_center_id"
+                                    value={form.cost_center_id}
+                                    onChange={handleChange}
+                                    className="w-full border p-2 rounded"
+                                >
+                                    <option value="">Select Cost Center</option>
+                                    {costCenters.map(cc => (
+                                        <option key={cc.id} value={cc.id}>
+                                            {cc.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* DEPARTMENT */}
+                            <div>
+                                <label className="block text-sm">Department</label>
+                                <select
+                                    name="department_id"
+                                    value={form.department_id}
+                                    onChange={handleChange}
+                                    className="w-full border p-2 rounded"
+                                >
+                                    <option value="">Select Department</option>
+                                    {departments.map(d => (
+                                        <option key={d.id} value={d.id}>{d.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* PEOPLE */}
+                            <div>
+                                <label className="block text-sm">Assign To</label>
+                                <select
+                                    name="person_id"
+                                    value={form.person_id}
+                                    onChange={handleChange}
+                                    disabled={!form.department_id}
+                                    className="w-full border p-2 rounded disabled:bg-gray-100"
+                                >
+                                    <option value="">Select User</option>
+                                    {filteredPeople.map(p => (
+                                        <option key={p.id} value={p.id}>
+                                            {p.first_name} {p.last_name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* PURCHASE DATE */}
+                            <div>
+                                <label className="block text-sm">Purchase Date</label>
+                                <input
+                                    type="date"
+                                    name="purchase_date"
+                                    value={form.purchase_date}
+                                    onChange={handleChange}
+                                    className="w-full border p-2 rounded"
+                                />
+                            </div>
+
+                            {/* COST */}
+                            <div>
+                                <label className="block text-sm">Cost (USD)</label>
+                                <input
+                                    type="number"
+                                    name="cost"
+                                    value={form.cost}
+                                    onChange={handleChange}
+                                    className="w-full border p-2 rounded"
+                                    step="0.01"
+                                />
+                            </div>
+
+                            {/* NOTES */}
+                            <div>
+                                <label className="block text-sm">Notes</label>
+                                <textarea
+                                    name="notes"
+                                    value={form.notes}
+                                    onChange={handleChange}
+                                    className="w-full border p-2 rounded"
+                                />
+                            </div>
+
+                            <Button onClick={submitForm} className="w-full">
+                                Create Asset
+                            </Button>
+
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* -------- ASSETS TABLE -------- */}
             <WindowSection title="All Assets" icon={HardDrive} buttons={buttons()}>
                 <h1>{error}</h1>
+
                 <table className="w-full text-sm text-left text-gray-500">
                     <thead className="text-xs text-gray-700 uppercase bg-gray-50">
                         <tr>
-                        <th scope="col" className="px-6 py-3">Asset ID</th>
-                        <th scope="col" className="px-6 py-3">Model</th>
-                        <th scope="col" className="px-6 py-3">Category</th>
-                        <th scope="col" className="px-6 py-3">Status</th>
-                        <th scope="col" className="px-6 py-3">Assigned To</th>
+                            <th className="px-6 py-3">Asset ID</th>
+                            <th className="px-6 py-3">Model</th>
+                            <th className="px-6 py-3">Category</th>
+                            <th className="px-6 py-3">Status</th>
+                            <th className="px-6 py-3">Assigned To</th>
                         </tr>
                     </thead>
+
                     <tbody>
-                        {assets.map((asset) => (
-                        <tr key={asset.id} className="bg-white border-b border-gray-200 hover:bg-gray-50">
-                            {/* Use asset_tag for the readable ID, not the UUID */}
-                            <td className="px-6 py-4 font-medium text-gray-900">
-                            {asset.asset_tag || 'No Tag'}
-                            </td>
-                            
-                            <td className="px-6 py-4">
-                            {asset.model_name}
-                            </td>
-                            
-                            <td className="px-6 py-4">
-                            {asset.category_name}
-                            </td>
-                            
-                            <td className="px-6 py-4">
-                            {/* Ensure your Tag component accepts these string values */}
-                            <Tag color={getStatusColor(asset.state)}>
-                                {asset.state.replace('_', ' ')}
-                            </Tag>
-                            </td>
-                            
-                            <td className="px-6 py-4">
-                            {asset.assigned_to_person || <span className="italic text-gray-400">Unassigned</span>}
-                            </td>
-                        </tr>
+                        {assets.map(asset => (
+                            <tr key={asset.id} className="bg-white border-b border-b-gray-200 hover:bg-gray-50">
+                                <td className="px-6 py-4 font-medium">
+                                    {asset.asset_tag || "No Tag"}
+                                </td>
+                                <td className="px-6 py-4">{asset.model_name}</td>
+                                <td className="px-6 py-4">{asset.category_name}</td>
+                                <td className="px-6 py-4">
+                                    <Tag color={getStatusColor(asset.state)}>
+                                        {asset.state.replace("_", " ")}
+                                    </Tag>
+                                </td>
+                                <td className="px-6 py-4">
+                                    {asset.assigned_to_person || (
+                                        <span className="italic text-gray-400">Unassigned</span>
+                                    )}
+                                </td>
+                            </tr>
                         ))}
                     </tbody>
+
                 </table>
             </WindowSection>
+
         </div>
-    )
+    );
 }
