@@ -8,11 +8,15 @@ import { supabase } from "../lib/supabaseClient";
 
 export default function DashboardContent() {
     const [assets, setAssets] = useState([]);
+    // initialize metrics with zeros so Card components receive defined values
+    const [metrics, setMetrics] = useState([0, 0, 0, 0])
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
     useEffect(() => {
+        // fetch both recent assets and metrics on mount
         fetchAssets();
+        fetchAssetMetrics();
     }, []);
 
     async function fetchAssets() {
@@ -36,6 +40,39 @@ export default function DashboardContent() {
         }
     }
 
+    async function fetchAssetMetrics() {
+        try {
+            const { data,error } = await supabase
+                .from('v_assets_metrics')
+                .select('*')
+            
+            if (error) throw error;
+            // Supabase may return an array with a single object { total_assets, in_use, in_stock, retired }
+            // Normalize into an array of numbers so Card components receive primitive values.
+            if (Array.isArray(data) && data.length > 0) {
+                const m = data[0];
+                setMetrics([
+                    m.total_assets ?? 0,
+                    m.in_use ?? 0,
+                    m.in_stock ?? 0,
+                    m.retired ?? 0,
+                ]);
+            } else if (data && typeof data === 'object') {
+                const m = data;
+                setMetrics([
+                    m.total_assets ?? 0,
+                    m.in_use ?? 0,
+                    m.in_stock ?? 0,
+                    m.retired ?? 0,
+                ]);
+            } else {
+                setMetrics([0, 0, 0, 0]);
+            }
+        } catch (err) {
+            setError(err.message)
+        }
+    }
+
     const getStatusColor = (status) => {
         const map = {
         in_use: 'green',       // active
@@ -52,10 +89,10 @@ export default function DashboardContent() {
         // single flex container: horizontal row with gap and wrapping on small screens
         <div className="dashboard-container lg:col-span-2 space-y-6">
             <div className="flex flex-wrap gap-4 items-stretch">
-                <Card title="Total Assets" val="1,428" />
-                <Card title="In Use" val="1,102" />
-                <Card title="In Stock" val="250" />
-                <Card title="Retired" val="76" />
+                <Card title="Total Assets" val={metrics[0]} />
+                <Card title="In Use" val={metrics[1]} />
+                <Card title="In Stock" val={metrics[2]} />
+                <Card title="Retired" val={metrics[3]} />
             </div>
 
             <WindowSection title="Recently Added Assets" icon={HardDrive}>
