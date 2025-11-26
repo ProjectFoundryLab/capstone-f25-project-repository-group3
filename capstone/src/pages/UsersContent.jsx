@@ -140,7 +140,7 @@ export default function UsersContent() {
                                     <td className="px-6 py-4">{user.email}</td>
                                     <td className="px-6 py-4">{user.department_name}</td>
                                     <td className="px-6 py-4">{user.user_type}</td>
-                                    <td className="px-6 py-4">{user.manager_name || ""}</td>
+                                    <td className="px-6 py-4">{user.managed_by || ""}</td>
                                 </tr>
                             ))}
                         </tbody>
