@@ -10,9 +10,7 @@ export default function MenuBar(props) {
         { name: 'Procurement', icon: ShoppingCart, page: 'Procurement' },
         { name: 'Users', icon: Users, page: 'Users' },
         { name: 'Departments', icon: Building, page: 'Departments' },
-        { name: 'Warranties', icon: Bookmark, page: 'Warranties' },
-        { name: 'Maintenance', icon: Wrench, page: 'Maintenance' },
-        { name: 'Security', icon: Shield, page: 'Security' },
+        { name: 'Maintenance', icon: Wrench, page: 'Maintenance' }
     ];
 
     const helpItems = [
