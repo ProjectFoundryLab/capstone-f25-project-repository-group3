@@ -71,7 +71,7 @@ export default function DepartmentContent() {
         <>
             {/* --- Modal Form --- */}
             {showForm && (
-                <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
                     <div className="bg-white p-6 rounded-lg shadow-lg w-96">
                         <h2 className="text-lg font-semibold mb-4">Add Department</h2>
                         <form onSubmit={addDepartment} className="space-y-4">

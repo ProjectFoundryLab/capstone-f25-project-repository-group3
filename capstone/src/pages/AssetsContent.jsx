@@ -235,7 +235,7 @@ export default function AssetsContent() {
             
             {/* CREATE ASSET MODAL */}
             {showForm && (
-                <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
+                <div className="fixed inset-0 bg-black/80 flex justify-center items-center z-50">
                     <div className="bg-white p-6 rounded-lg w-full max-w-lg shadow-xl border">
 
                         <div className="flex justify-between items-center mb-4">

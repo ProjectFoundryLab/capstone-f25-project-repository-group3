@@ -142,7 +142,7 @@ export default function SoftwareContent() {
         <>
             {/* ------------------------ Add Software Modal ------------------------ */}
             {showNewSoftware && (
-                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
                     <form className="bg-white p-6 rounded-lg shadow-lg w-96"
                         onSubmit={createSoftware}>
                         
@@ -175,7 +175,7 @@ export default function SoftwareContent() {
 
             {/* ------------------------ Add Licenses Modal ------------------------ */}
             {showAddLicenses && (
-                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
                     <form className="bg-white p-6 rounded-lg shadow-lg w-96"
                         onSubmit={addLicenses}>
 
@@ -218,7 +218,7 @@ export default function SoftwareContent() {
 
             {/* ------------------------ Assign License Modal ------------------------ */}
             {showAssignLicense && (
-                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
                     <form
                         className="bg-white p-6 rounded-lg shadow-lg w-96"
                         onSubmit={assignLicense}
