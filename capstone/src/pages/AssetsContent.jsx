@@ -19,6 +19,7 @@ export default function AssetsContent() {
     const [showForm, setShowForm] = useState(false);
 
     const [models, setModels] = useState([]);
+    const [categories, setCategories] = useState([]);
     const [departments, setDepartments] = useState([]);
     const [people, setPeople] = useState([]);
     const [filteredPeople, setFilteredPeople] = useState([]);
@@ -36,6 +37,14 @@ export default function AssetsContent() {
         location_id: "",
     });
 
+    const [showModelForm, setShowModelForm] = useState(false);
+    const [modelForm, setModelForm] = useState({
+        category_id: "",
+        vendor: "",
+        name: "",
+        sku: "",
+    });
+
     useEffect(() => {
         fetchAssets();
         fetchDropdownData();
@@ -43,12 +52,14 @@ export default function AssetsContent() {
 
     async function fetchDropdownData() {
         const { data: modelData } = await supabase.from("asset_models").select("*").order("name");
+        const { data: catData } = await supabase.from("asset_categories").select("*").order("name");
         const { data: deptData } = await supabase.from("departments").select("*").order("name");
         const { data: peopleData } = await supabase.from("people").select("*").eq("is_active", true);
         const { data: ccData } = await supabase.from("cost_centers").select("*").order("name");
         const { data: locData } = await supabase.from("locations").select("*").order("name");
 
         setModels(modelData || []);
+        setCategories(catData || []);
         setDepartments(deptData || []);
         setPeople(peopleData || []);
         setCostCenters(ccData || []);
@@ -79,8 +90,16 @@ export default function AssetsContent() {
                 <Button icon={PlusCircle} onClick={() => setShowForm(true)}>
                     New Asset
                 </Button>
+
+                <Button icon={PlusCircle} onClick={openModelModal}>
+                    New Model
+                </Button>
             </div>
         );
+    }
+
+    function openModelModal() {
+        setShowModelForm(true);
     }
 
     function handleChange(e) {
@@ -92,6 +111,42 @@ export default function AssetsContent() {
                 people.filter(p => p.department_id === value)
             );
         }
+    }
+
+    function handleModelChange(e) {
+        const { name, value } = e.target;
+        setModelForm(prev => ({ ...prev, [name]: value }));
+    }
+
+    async function submitModel() {
+        if (!modelForm.name || modelForm.name.trim() === "") {
+            alert("Model name is required");
+            return;
+        }
+
+        const payload = {
+            category_id: modelForm.category_id || null,
+            vendor: modelForm.vendor || null,
+            name: modelForm.name.trim(),
+            sku: modelForm.sku || null,
+        };
+
+        const { data, error } = await supabase.from("asset_models").insert([payload]).select().single();
+
+        if (error) {
+            alert("Error creating model: " + error.message);
+            return;
+        }
+
+        // add to local models list and keep sorted
+        setModels(prev => {
+            const next = (prev || []).concat([data]);
+            next.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+            return next;
+        });
+
+        setShowModelForm(false);
+        setModelForm({ category_id: "", vendor: "", name: "", sku: "" });
     }
 
     async function generateAssetTag(modelId) {
@@ -376,6 +431,74 @@ export default function AssetsContent() {
 
                             <Button onClick={submitForm} className="w-full">
                                 Create Asset
+                            </Button>
+
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* CREATE MODEL MODAL */}
+            {showModelForm && (
+                <div className="fixed inset-0 bg-black/80 flex justify-center items-center z-50">
+                    <div className="bg-white p-6 rounded-lg w-full max-w-lg shadow-xl border">
+
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-lg font-semibold">New Model</h2>
+                            <button onClick={() => setShowModelForm(false)}>
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="space-y-3">
+
+                            <div>
+                                <label className="block text-sm">Category</label>
+                                <select
+                                    name="category_id"
+                                    value={modelForm.category_id}
+                                    onChange={handleModelChange}
+                                    className="w-full border p-2 rounded"
+                                >
+                                    <option value="">Select Category</option>
+                                    {categories.map(c => (
+                                        <option key={c.id} value={c.id}>{c.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm">Vendor</label>
+                                <input
+                                    name="vendor"
+                                    value={modelForm.vendor}
+                                    onChange={handleModelChange}
+                                    className="w-full border p-2 rounded"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm">Name</label>
+                                <input
+                                    name="name"
+                                    value={modelForm.name}
+                                    onChange={handleModelChange}
+                                    className="w-full border p-2 rounded"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm">SKU</label>
+                                <input
+                                    name="sku"
+                                    value={modelForm.sku}
+                                    onChange={handleModelChange}
+                                    className="w-full border p-2 rounded"
+                                />
+                            </div>
+
+                            <Button onClick={submitModel} className="w-full">
+                                Create Model
                             </Button>
 
                         </div>
