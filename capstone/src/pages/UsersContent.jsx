@@ -1,5 +1,5 @@
 import Button from "../components/Button"
-import { PlusCircle, Users } from "lucide-react"
+import { PlusCircle, Users, Edit, Trash2 } from "lucide-react"
 import WindowSection from "../components/WindowSection";
 import { supabase } from "../lib/supabaseClient";
 import { useState, useEffect } from "react";
@@ -9,12 +9,13 @@ export default function UsersContent() {
     const [error, setError] = useState(null)
 
     const [showModal, setShowModal] = useState(false)
+    const [editModal, setEditModal] = useState(false)
 
-    // Dropdown data
+    const [currentUser, setCurrentUser] = useState(null)
+
     const [departments, setDepartments] = useState([])
     const [managers, setManagers] = useState([])
 
-    // New user form
     const [newUser, setNewUser] = useState({
         department_id: "",
         first_name: "",
@@ -68,7 +69,7 @@ export default function UsersContent() {
 
         const finalEmail = `${newUser.email.replace("@bqre.com", "")}@bqre.com`
 
-        const manager_id =
+        const manager_name =
             newUser.user_type === "Manager"
                 ? null
                 : newUser.managed_by || null
@@ -82,7 +83,7 @@ export default function UsersContent() {
                     last_name: newUser.last_name,
                     email: finalEmail,
                     user_type: newUser.user_type,
-                    managed_by: manager_id
+                    managed_by: manager_name
                 })
 
             if (error) throw error
@@ -101,6 +102,67 @@ export default function UsersContent() {
             fetchManagers()
         } catch (error) {
             setError(error.message)
+        }
+    }
+
+    function openEditModal(user) {
+        setCurrentUser({
+            id: user.id,
+            department_id: user.department_id || "",
+            first_name: user.first_name,
+            last_name: user.last_name,
+            email: user.email.replace("@bqre.com", ""),
+            user_type: user.user_type,
+            managed_by: user.managed_by || ""
+        })
+        setEditModal(true)
+    }
+
+    async function updateUser(e) {
+        e.preventDefault()
+
+        const finalEmail = `${currentUser.email.replace("@bqre.com", "")}@bqre.com`
+
+        const managerName =
+            currentUser.user_type === "Manager"
+                ? null
+                : currentUser.managed_by || null
+
+        try {
+            const { error } = await supabase
+                .from("people")
+                .update({
+                    department_id: currentUser.department_id || null,
+                    first_name: currentUser.first_name,
+                    last_name: currentUser.last_name,
+                    email: finalEmail,
+                    user_type: currentUser.user_type,
+                    managed_by: managerName
+                })
+                .eq("id", currentUser.id)
+
+            if (error) throw error
+
+            setEditModal(false)
+            fetchUsers()
+            fetchManagers()
+        } catch (err) {
+            setError(err.message)
+        }
+    }
+
+    async function deleteUser(id) {
+        try {
+            const { error } = await supabase
+                .from("people")
+                .update({ is_active: false })
+                .eq("id", id)
+
+            if (error) throw error
+
+            fetchUsers()
+        } catch (err) {
+            setError(err.message)
         }
     }
 
@@ -129,6 +191,7 @@ export default function UsersContent() {
                                 <th className="px-6 py-3">Department</th>
                                 <th className="px-6 py-3">Role</th>
                                 <th className="px-6 py-3">Manager</th>
+                                <th className="px-6 py-3">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -141,6 +204,22 @@ export default function UsersContent() {
                                     <td className="px-6 py-4">{user.department_name}</td>
                                     <td className="px-6 py-4">{user.user_type}</td>
                                     <td className="px-6 py-4">{user.managed_by || ""}</td>
+                                    <td className="px-6 py-4 space-x-2">
+                                        <button
+                                            onClick={() => openEditModal(user)}
+                                            className="inline-flex items-center justify-center p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                            title="Edit user"
+                                        >
+                                            <Edit size={18} />
+                                        </button>
+                                        <button
+                                            onClick={() => deleteUser(user.id)}
+                                            className="inline-flex items-center justify-center p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                            title="Delete user"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
@@ -174,7 +253,6 @@ export default function UsersContent() {
                                 required
                             />
 
-                            {/* Email field with suffix */}
                             <div>
                                 <label className="text-sm text-gray-600">Email</label>
                                 <div className="flex items-center border rounded overflow-hidden mt-1">
@@ -197,7 +275,6 @@ export default function UsersContent() {
                                 </div>
                             </div>
 
-                            {/* Department dropdown */}
                             <select
                                 className="w-full border rounded p-2"
                                 value={newUser.department_id}
@@ -214,7 +291,6 @@ export default function UsersContent() {
                                 ))}
                             </select>
 
-                            {/* User type dropdown */}
                             <select
                                 className="w-full border rounded p-2"
                                 value={newUser.user_type}
@@ -226,7 +302,6 @@ export default function UsersContent() {
                                 <option value="Manager">Manager</option>
                             </select>
 
-                            {/* Manager dropdown only if NOT a manager */}
                             {newUser.user_type !== "Manager" && (
                                 <select
                                     className="w-full border rounded p-2"
@@ -238,7 +313,10 @@ export default function UsersContent() {
                                 >
                                     <option value="">Select Manager</option>
                                     {managers.map(m => (
-                                        <option key={m.id} value={m.id}>
+                                        <option 
+                                            key={m.id} 
+                                            value={`${m.first_name} ${m.last_name}`}
+                                        >
                                             {m.first_name} {m.last_name}
                                         </option>
                                     ))}
@@ -248,6 +326,110 @@ export default function UsersContent() {
                             <div className="flex justify-end space-x-2 mt-4">
                                 <Button onClick={() => setShowModal(false)}>Cancel</Button>
                                 <Button icon={PlusCircle} type="submit">Add User</Button>
+                            </div>
+
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* ---------- Edit User Modal ---------- */}
+            {editModal && currentUser && (
+                <div className="fixed inset-0 bg-black/80 flex justify-center items-center z-50">
+                    <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+                        <h2 className="text-xl font-semibold mb-4">Edit User</h2>
+
+                        <form onSubmit={updateUser} className="space-y-3">
+
+                            <input
+                                type="text"
+                                className="w-full border rounded p-2"
+                                placeholder="First Name"
+                                value={currentUser.first_name}
+                                onChange={(e) => setCurrentUser({ ...currentUser, first_name: e.target.value })}
+                                required
+                            />
+
+                            <input
+                                type="text"
+                                className="w-full border rounded p-2"
+                                placeholder="Last Name"
+                                value={currentUser.last_name}
+                                onChange={(e) => setCurrentUser({ ...currentUser, last_name: e.target.value })}
+                                required
+                            />
+
+                            <div>
+                                <label className="text-sm text-gray-600">Email</label>
+                                <div className="flex items-center border rounded overflow-hidden mt-1">
+                                    <input
+                                        type="text"
+                                        className="w-full p-2 outline-none"
+                                        value={currentUser.email}
+                                        onChange={(e) =>
+                                            setCurrentUser({
+                                                ...currentUser,
+                                                email: e.target.value.replace("@bqre.com", "")
+                                            })
+                                        }
+                                    />
+                                    <span className="px-3 bg-gray-100 border-l">@bqre.com</span>
+                                </div>
+                            </div>
+
+                            <select
+                                className="w-full border rounded p-2"
+                                value={currentUser.department_id}
+                                onChange={(e) =>
+                                    setCurrentUser({ ...currentUser, department_id: e.target.value })
+                                }
+                            >
+                                <option value="">Select Department</option>
+                                {departments.map(dep => (
+                                    <option key={dep.id} value={dep.id}>
+                                        {dep.name}
+                                    </option>
+                                ))}
+                            </select>
+
+                            <select
+                                className="w-full border rounded p-2"
+                                value={currentUser.user_type}
+                                onChange={(e) =>
+                                    setCurrentUser({
+                                        ...currentUser,
+                                        user_type: e.target.value,
+                                        managed_by: ""
+                                    })
+                                }
+                            >
+                                <option value="General User">General</option>
+                                <option value="Manager">Manager</option>
+                            </select>
+
+                            {currentUser.user_type !== "Manager" && (
+                                <select
+                                    className="w-full border rounded p-2"
+                                    value={currentUser.managed_by}
+                                    onChange={(e) =>
+                                        setCurrentUser({ ...currentUser, managed_by: e.target.value })
+                                    }
+                                >
+                                    <option value="">Select Manager</option>
+                                    {managers.map(m => (
+                                        <option 
+                                            key={m.id} 
+                                            value={`${m.first_name} ${m.last_name}`}
+                                        >
+                                            {m.first_name} {m.last_name}
+                                        </option>
+                                    ))}
+                                </select>
+                            )}
+
+                            <div className="flex justify-end space-x-2 mt-4">
+                                <Button onClick={() => setEditModal(false)}>Cancel</Button>
+                                <Button type="submit">Save Changes</Button>
                             </div>
 
                         </form>
