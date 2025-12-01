@@ -477,6 +477,7 @@ export default function ProcurementContent() {
                 <th className="px-6 py-3">Date</th>
                 <th className="px-6 py-3">Items</th>
                 <th className="px-6 py-3">Total</th>
+                <th className="px-6 py-3">Status</th>
                 <th className="px-6 py-3" />
               </tr>
             </thead>
@@ -503,6 +504,7 @@ export default function ProcurementContent() {
                     <td className="px-6 py-4">{po.order_date}</td>
                     <td className="px-6 py-4">{po.po_line_count ?? 0}</td>
                     <td className="px-6 py-4">${po.total_po_cost ?? "0.00"}</td>
+                    <td className="px-6 py-4">{po.status}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center space-x-2">
                         <Button size="sm" icon={Edit} onClick={() => openEditPoModal(po)}>
