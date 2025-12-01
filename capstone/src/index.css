@@ -1,1 +1,107 @@
 @import "tailwindcss";
+
+/* Ensure the video/canvas injected by html5-qrcode fills the square container
+	 and uses cover mode so the camera fills the visible area instead of leaving
+	 a gray band inside the square. */
+#qr-reader {
+	position: relative;
+	overflow: hidden;
+}
+
+/* Let only the injected video/canvas be visible inside the reader; hide
+	 any library overlay elements so we don't get duplicate corner frames. */
+#qr-reader video, #qr-reader canvas {
+	width: 100% !important;
+	height: 100% !important;
+	object-fit: cover !important;
+	display: block !important;
+}
+#qr-reader > :not(video):not(canvas) {
+	display: none !important;
+}
+
+/* White corner frame for scanner overlay */
+.qr-corner {
+	position: absolute;
+	width: 36px;
+	height: 36px;
+}
+.qr-corner-tl { top: 0; left: 0; }
+.qr-corner-tr { top: 0; right: 0; }
+.qr-corner-bl { bottom: 0; left: 0; }
+.qr-corner-br { bottom: 0; right: 0; }
+.qr-corner::before {
+	content: '';
+	position: absolute;
+	background: transparent;
+}
+.qr-corner-tl::before {
+	top: 0;
+	left: 0;
+	width: 20px;
+	height: 4px;
+	background: white;
+	box-shadow: 0 0 0 2px rgba(255,255,255,0.0);
+}
+.qr-corner-tl::after {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 4px;
+	height: 20px;
+	background: white;
+}
+.qr-corner-tr::before {
+	top: 0;
+	right: 0;
+	width: 20px;
+	height: 4px;
+	background: white;
+}
+.qr-corner-tr::after {
+	content: '';
+	position: absolute;
+	top: 0;
+	right: 0;
+	width: 4px;
+	height: 20px;
+	background: white;
+}
+.qr-corner-bl::before {
+	bottom: 0;
+	left: 0;
+	width: 20px;
+	height: 4px;
+	background: white;
+}
+.qr-corner-bl::after {
+	content: '';
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	width: 4px;
+	height: 20px;
+	background: white;
+}
+.qr-corner-br::before {
+	bottom: 0;
+	right: 0;
+	width: 20px;
+	height: 4px;
+	background: white;
+}
+.qr-corner-br::after {
+	content: '';
+	position: absolute;
+	bottom: 0;
+	right: 0;
+	width: 4px;
+	height: 20px;
+	background: white;
+}
+
+/* Slight shadow to improve visibility on bright backgrounds */
+.qr-corner::after {
+	box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+}

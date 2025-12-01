@@ -40,7 +40,21 @@ export default function QRScanner({ isMobileView = false }) {
 
         html5QrCodeRef.current = new Html5Qrcode("qr-reader");
 
-        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+        // Compute a square qrbox that fits inside the container so the overlay
+        // remains a square on mobile and desktop. Fall back to 250 if unavailable.
+        let qrboxSize = 250;
+        try {
+            if (scannerRef.current) {
+                const containerWidth = Math.floor(scannerRef.current.clientWidth || 0);
+                // Use ~80% of container width but clamp to reasonable bounds
+                const calculated = Math.floor(containerWidth * 0.8);
+                qrboxSize = Math.min(Math.max(160, calculated || 250), 420);
+            }
+        } catch (e) {
+            // ignore and use default
+        }
+
+        const config = { fps: 10, qrbox: { width: qrboxSize, height: qrboxSize } };
 
         html5QrCodeRef.current
             .start(
@@ -136,7 +150,7 @@ export default function QRScanner({ isMobileView = false }) {
 
             {showScanner && (
                 <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 px-2">
-                    <div className="bg-white rounded-lg p-2 sm:p-6 w-full max-w-md mx-auto relative overflow-y-auto max-h-[95vh] shadow-lg">
+                    <div className="bg-white rounded-lg p-2 sm:p-6 w-full max-w-md mx-auto relative shadow-lg max-h-[95vh] flex flex-col">
                         <div className="flex justify-between items-center mb-2 sm:mb-4 px-2 sm:px-0">
                             <h2 className="text-lg sm:text-xl font-semibold">Scan QR Code</h2>
                             <button
@@ -147,86 +161,99 @@ export default function QRScanner({ isMobileView = false }) {
                                 <X className="w-6 h-6" />
                             </button>
                         </div>
-                        {!scanData && (
-                            <div
-                                id="qr-reader"
-                                ref={scannerRef}
-                                className="w-full rounded-lg overflow-hidden min-h-[220px] max-h-[320px] mx-auto"
-                                style={{ background: '#f3f4f6' }}
-                            ></div>
-                        )}
-                        {/* Error message for invalid QR codes */}
-                        {scanError && (
-                            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                                <p className="text-sm font-medium text-red-800">{scanError}</p>
-                            </div>
-                        )}
-                        {/* Display parsed QR data in a responsive layout */}
-                        {scanData ? (
-                            <div className="mt-4 p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
-                                <h3 className="text-base sm:text-lg font-semibold mb-3">Asset Details</h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <div>
-                                        <div className="text-xs text-gray-500">Asset ID</div>
-                                        <div className="font-medium break-words">{scanData.id}</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-xs text-gray-500">Asset Tag</div>
-                                        <div className="font-medium break-words">{scanData.asset_tag}</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-xs text-gray-500">Model</div>
-                                        <div className="font-medium break-words">{scanData.model}</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-xs text-gray-500">Manufacturer</div>
-                                        <div className="font-medium break-words">{scanData.manufacturer}</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-xs text-gray-500">Category</div>
-                                        <div className="font-medium break-words">{scanData.category}</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-xs text-gray-500">Location</div>
-                                        <div className="font-medium break-words">{scanData.location}</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-xs text-gray-500">State</div>
-                                        <div className="font-medium break-words">{scanData.state}</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-xs text-gray-500">Condition</div>
-                                        <div className="font-medium break-words">{scanData.condition}</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-xs text-gray-500">Assigned To</div>
-                                        <div className="font-medium break-words">{scanData.assigned_to || 'Unassigned'}</div>
-                                    </div>
-                                    <div className="sm:col-span-2">
-                                        <div className="text-xs text-gray-500">Assigned Email</div>
-                                        <div className="font-medium break-words">{scanData.assigned_email || '-'}</div>
-                                    </div>
-                                    <div className="sm:col-span-2">
-                                        <div className="text-xs text-gray-500">Assigned Date</div>
-                                        <div className="font-medium break-words">{scanData.assigned_date || '-'}</div>
+
+                        <div className="overflow-y-auto flex-1 px-2">
+                            {!scanData && (
+                                <div className="relative w-full max-w-[90vw] sm:max-w-md aspect-square rounded-lg overflow-hidden mx-auto" style={{ background: '#f3f4f6' }}>
+                                    <div id="qr-reader" ref={scannerRef} className="w-full h-full" />
+
+                                    {/* Overlay with white corner accents */}
+                                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                                        <div className="w-[78%] aspect-square relative">
+                                            <div className="qr-corner qr-corner-tl" />
+                                            <div className="qr-corner qr-corner-tr" />
+                                            <div className="qr-corner qr-corner-bl" />
+                                            <div className="qr-corner qr-corner-br" />
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ) : scanResult && !scanError ? (
-                            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                                <p className="text-sm font-medium text-yellow-800">Scanned Data (unparsed)</p>
-                                <p className="text-sm text-yellow-700 mt-1 break-all">{scanResult}</p>
-                            </div>
-                        ) : null}
-                        {/* Actions: allow rescanning without closing modal */}
+                            )}
+                            {/* Error message for invalid QR codes */}
+                            {scanError && (
+                                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                                    <p className="text-sm font-medium text-red-800">{scanError}</p>
+                                </div>
+                            )}
+                            {/* Display parsed QR data in a responsive layout */}
+                            {scanData ? (
+                                <div className="mt-4 p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+                                    <h3 className="text-base sm:text-lg font-semibold mb-3">Asset Details</h3>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div>
+                                            <div className="text-xs text-gray-500">Asset ID</div>
+                                            <div className="font-medium break-words">{scanData.id}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-xs text-gray-500">Asset Tag</div>
+                                            <div className="font-medium break-words">{scanData.asset_tag}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-xs text-gray-500">Model</div>
+                                            <div className="font-medium break-words">{scanData.model}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-xs text-gray-500">Manufacturer</div>
+                                            <div className="font-medium break-words">{scanData.manufacturer}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-xs text-gray-500">Category</div>
+                                            <div className="font-medium break-words">{scanData.category}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-xs text-gray-500">Location</div>
+                                            <div className="font-medium break-words">{scanData.location}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-xs text-gray-500">State</div>
+                                            <div className="font-medium break-words">{scanData.state}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-xs text-gray-500">Condition</div>
+                                            <div className="font-medium break-words">{scanData.condition}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-xs text-gray-500">Assigned To</div>
+                                            <div className="font-medium break-words">{scanData.assigned_to || 'Unassigned'}</div>
+                                        </div>
+                                        <div className="sm:col-span-2">
+                                            <div className="text-xs text-gray-500">Assigned Email</div>
+                                            <div className="font-medium break-words">{scanData.assigned_email || '-'}</div>
+                                        </div>
+                                        <div className="sm:col-span-2">
+                                            <div className="text-xs text-gray-500">Assigned Date</div>
+                                            <div className="font-medium break-words">{scanData.assigned_date || '-'}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : scanResult && !scanError ? (
+                                <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                    <p className="text-sm font-medium text-yellow-800">Scanned Data (unparsed)</p>
+                                    <p className="text-sm text-yellow-700 mt-1 break-all">{scanResult}</p>
+                                </div>
+                            ) : null}
+                        </div>
+
+                        {/* Actions: allow rescanning without closing modal - footer is sticky so buttons are reachable */}
                         {(scanData || scanResult || scanError) && (
-                            <div className="mt-4 flex flex-col sm:flex-row justify-end gap-2">
-                                <Button variant="secondary" onClick={restartScanner} icon={QrCode}>
-                                    Scan another
-                                </Button>
-                                <Button variant="ghost" onClick={closeScanner}>
-                                    Close
-                                </Button>
+                            <div className="mt-4 sticky bottom-0 bg-white pt-2">
+                                <div className="flex flex-col sm:flex-row justify-end gap-2">
+                                    <Button variant="secondary" onClick={restartScanner} icon={QrCode}>
+                                        Scan another
+                                    </Button>
+                                    <Button variant="ghost" onClick={closeScanner}>
+                                        Close
+                                    </Button>
+                                </div>
                             </div>
                         )}
                     </div>
