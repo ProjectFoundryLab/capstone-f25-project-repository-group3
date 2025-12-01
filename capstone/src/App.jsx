@@ -17,11 +17,11 @@ export default function App() {
           element={
             <PrivateRoute>
               {/* Mobile/Tablet View: Only QR Scanner */}
-              <div className="lg:hidden w-full h-screen bg-slate-900 flex items-center justify-center">
+              <div className="xl:hidden w-full h-screen bg-slate-900 flex items-center justify-center">
                 <QRScanner isMobileView={true} />
               </div>
               {/* Desktop View: Full Application */}
-              <div className="hidden lg:block">
+              <div className="hidden xl:block">
                 <CommonView currentPage={currentPage} setCurrentPage={setCurrentPage} />
               </div>
             </PrivateRoute>

@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { QrCode, X } from "lucide-react";
 import { Html5Qrcode } from "html5-qrcode";
 import Button from "./Button";
+import { signOut } from "../lib/auth";
 
 export default function QRScanner({ isMobileView = false }) {
     const [showScanner, setShowScanner] = useState(false);
@@ -14,6 +15,14 @@ export default function QRScanner({ isMobileView = false }) {
 
     const onScanClick = () => {
         setShowScanner(true);
+    };
+
+    const handleSignOut = async () => {
+        try {
+            await signOut();
+        } catch (err) {
+            console.error("Error signing out", err);
+        }
     };
 
     const closeScanner = () => {
@@ -134,14 +143,23 @@ export default function QRScanner({ isMobileView = false }) {
     return (
         <>
             {isMobileView ? (
-                <button
-                    onClick={onScanClick}
-                    className="flex items-center justify-center gap-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-6 px-8 rounded-lg transition-colors duration-200 text-xl w-full max-w-xs mx-auto"
-                    style={{ minHeight: 64 }}
-                >
-                    <QrCode className="w-8 h-8" />
-                    Scan Asset
-                </button>
+                <div className="w-full max-w-xs mx-auto flex flex-col gap-3">
+                    <button
+                        onClick={onScanClick}
+                        className="flex items-center justify-center gap-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-6 px-8 rounded-lg transition-colors duration-200 text-xl w-full"
+                        style={{ minHeight: 64 }}
+                    >
+                        <QrCode className="w-8 h-8" />
+                        Scan Asset
+                    </button>
+
+                    <button
+                        onClick={handleSignOut}
+                        className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 text-base w-full"
+                    >
+                        Sign out
+                    </button>
+                </div>
             ) : (
                 <Button variant="secondary" icon={QrCode} onClick={onScanClick}>
                     Scan Asset
