@@ -1,10 +1,10 @@
-**Project Description:**
+**Project Description:**<br>
 This project proposes the development of a web-based IT Asset Management (ITAM) system designed to efficiently track the lifecycle of a mid-sized organization’s IT assets from deployment to retirement. Without a unified ITAM system, many such organizations face issues like security risks and data inconsistencies in the management of hardware, software, licenses, and cloud resources. To address these challenges and provide proactive solutions, our system will offer a variety of useful features, including centralized asset tracking, audit logging, QR code scanning, role-based access control, and reporting dashboards.
 
-**Tools:**
+**Tools:**<br>
 This application is deployed on Vercel. It was programmed with Javascript, React, Tailwind and utilizes Supabase for backend functions like storage and authentication. For scanning QR Codes we use the "html5-qrcode" library and for creating them we use the "qrcode" library. 
 
-**Usage:**
+**Usage:**<br>
 In order to use our application you need to be issued login credentials. Once you get them, you visit https://fall25-gvsu-capstone-group3.vercel.app and login. Once in, you'll have access to the QR Code scanner and the following screens
 
   * **Dashboard:** This is the home screen with summary information regarding the company's assets and software utilization.
@@ -31,15 +31,15 @@ In order to use our application you need to be issued login credentials. Once yo
   * **Support:** Support tickets are crearted from here. Users need to add which asset needs support, a title, description, status, and priority.
     <img width="2415" height="1200" alt="image" src="https://github.com/user-attachments/assets/04e1ccd4-6b32-42dc-bc96-040ec4f99740" />
 
-**QR Code Scanner:**
+**QR Code Scanner:**<br>
 The QR code scanner is the only feature allowed on mobile and tablet views and is used to scan QR codes generate by this application. Any other code will display an error.
 <img width="288" height="109" alt="image" src="https://github.com/user-attachments/assets/3fdba99d-3cd1-48f8-b7c4-76fb65fc3745" />
 <img width="883" height="1271" alt="image" src="https://github.com/user-attachments/assets/b0ee6fc7-e3a2-4ec0-909e-6888d974e47e" />
 <img width="862" height="1160" alt="image" src="https://github.com/user-attachments/assets/8b4c2e6d-143f-4e68-8dc9-ff9f9391523b" />
 
 
-**Contributions:**
-Ryan: Code development
-Brenden: Project Management/Documents (poster and sprint slides for example)
-Quadri: Feature testing
-Evan: Database management
+**Contributions:**<br>
+Ryan: Code development<br>
+Brenden: Project Management/Documents (poster and sprint slides for example)<br>
+Quadri: Feature testing<br>
+Evan: Database management<br>
