@@ -1,4 +1,4 @@
-**Project Description:**\n
+**Project Description:**
 This project proposes the development of a web-based IT Asset Management (ITAM) system designed to efficiently track the lifecycle of a mid-sized organization’s IT assets from deployment to retirement. Without a unified ITAM system, many such organizations face issues like security risks and data inconsistencies in the management of hardware, software, licenses, and cloud resources. To address these challenges and provide proactive solutions, our system will offer a variety of useful features, including centralized asset tracking, audit logging, QR code scanning, role-based access control, and reporting dashboards.
 
 **Tools:**
