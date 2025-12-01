@@ -9,11 +9,8 @@ import SoftwareContent from '../pages/SoftwareContent'
 import ProcurementContent from '../pages/ProcurementContent'
 import UsersContent from '../pages/UsersContent'
 import DepartmentsContent from '../pages/DepartmentsContent'
-import WarrantyContent from '../pages/WarrantyContent'
 import MaintenanceContent from '../pages/MaintenanceContent'
-import SecurityContent from '../pages/SecurityContent'
 import SupportContent from '../pages/SupportContent'
-import SettingsContent from '../pages/SettingsContent'
 
 export default function CommonView(props) {
   const [user, setUser] = useState(null)
@@ -65,16 +62,10 @@ export default function CommonView(props) {
         return <UsersContent />
       case 'Departments':
         return <DepartmentsContent />
-      case 'Warranties':
-        return <WarrantyContent />
       case 'Maintenance':
         return <MaintenanceContent />
-      case 'Security':
-        return <SecurityContent />
       case 'Support':
         return <SupportContent />
-      case 'Settings':
-        return <SettingsContent />
       default:
         return <DashboardContent />
     }

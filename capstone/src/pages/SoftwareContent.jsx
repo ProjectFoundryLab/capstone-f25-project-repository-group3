@@ -1,4 +1,4 @@
-import { Package, PlusCircle } from "lucide-react";
+import { Package, PlusCircle, Edit, Trash2 } from "lucide-react";
 import WindowSection from "../components/WindowSection";
 import Button from "../components/Button";
 import { useState, useEffect } from "react";
@@ -13,6 +13,11 @@ export default function SoftwareContent() {
     const [showNewSoftware, setShowNewSoftware] = useState(false);
     const [showAddLicenses, setShowAddLicenses] = useState(false);
     const [showAssignLicense, setShowAssignLicense] = useState(false);
+
+    // Edit + Delete modal states
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [activeSoftware, setActiveSoftware] = useState(null);
 
     // Form fields
     const [newName, setNewName] = useState("");
@@ -80,7 +85,7 @@ export default function SoftwareContent() {
         fetchLicenses();
     }
 
-    // --- Add licenses (increments count_available) ---
+    // --- Add licenses ---
     async function addLicenses(e) {
         e.preventDefault();
 
@@ -99,7 +104,7 @@ export default function SoftwareContent() {
         fetchLicenses();
     }
 
-    // --- Assign license to a person ---
+    // --- Assign license ---
     async function assignLicense(e) {
         e.preventDefault();
 
@@ -121,6 +126,51 @@ export default function SoftwareContent() {
         fetchLicenses();
     }
 
+    // --- Edit Software ---
+    function openEditModal(sw) {
+        setActiveSoftware(sw);
+        setNewName(sw.name);
+        setNewPublisher(sw.publisher);
+        setShowEditModal(true);
+    }
+
+    async function updateSoftware(e) {
+        e.preventDefault();
+
+        const { error } = await supabase
+            .from("software_titles")
+            .update({
+                name: newName,
+                publisher: newPublisher
+            })
+            .eq("id", activeSoftware.id);
+
+        if (error) {
+            setError(error.message);
+            return;
+        }
+
+        setShowEditModal(false);
+        setActiveSoftware(null);
+        fetchLicenses();
+    }
+
+    // --- Delete Software ---
+    async function deleteSoftware() {
+        const { error } = await supabase
+            .from("software_titles")
+            .delete()
+            .eq("id", activeSoftware.id);
+
+        if (error) {
+            setError(error.message);
+            return;
+        }
+
+        setShowDeleteConfirm(false);
+        setActiveSoftware(null);
+        fetchLicenses();
+    }
 
     const buttons = () => (
         <div className="flex space-x-2">
@@ -156,7 +206,7 @@ export default function SoftwareContent() {
                             required
                         />
 
-                        <label className="block mb-2 text-sm">Publisher (optional)</label>
+                        <label className="block mb-2 text-sm">Publisher</label>
                         <input
                             className="w-full p-2 rounded bg-gray-100 mb-4"
                             value={newPublisher}
@@ -170,6 +220,71 @@ export default function SoftwareContent() {
                             <Button type="submit">Save</Button>
                         </div>
                     </form>
+                </div>
+            )}
+
+            {/* ------------------------ Edit Software Modal ------------------------ */}
+            {showEditModal && activeSoftware && (
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+                    <form
+                        className="bg-white p-6 rounded-lg shadow-lg w-96"
+                        onSubmit={updateSoftware}
+                    >
+                        <h2 className="text-lg font-semibold mb-4">
+                            Edit Software
+                        </h2>
+
+                        <label className="block mb-2 text-sm">Name</label>
+                        <input
+                            className="w-full p-2 rounded bg-gray-100 mb-4"
+                            value={newName}
+                            onChange={e => setNewName(e.target.value)}
+                            required
+                        />
+
+                        <label className="block mb-2 text-sm">Publisher</label>
+                        <input
+                            className="w-full p-2 rounded bg-gray-100 mb-4"
+                            value={newPublisher}
+                            onChange={e => setNewPublisher(e.target.value)}
+                        />
+
+                        <div className="flex justify-end mt-4 space-x-2">
+                            <Button type="button"
+                                onClick={() => {
+                                    setShowEditModal(false);
+                                    setActiveSoftware(null);
+                                }}>
+                                Cancel
+                            </Button>
+                            <Button type="submit">Save</Button>
+                        </div>
+                    </form>
+                </div>
+            )}
+
+            {/* ------------------------ Delete Confirm Modal ------------------------ */}
+            {showDeleteConfirm && activeSoftware && (
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+                        <h2 className="text-lg font-semibold mb-4 text-red-600">
+                            Delete Software
+                        </h2>
+
+                        <p className="mb-4">
+                            Are you sure you want to delete{" "}
+                            <span className="font-semibold">{activeSoftware.name}</span>?
+                        </p>
+
+                        <div className="flex justify-end space-x-2">
+                            <Button onClick={() => setShowDeleteConfirm(false)}>
+                                Cancel
+                            </Button>
+                            <Button variant="danger" onClick={deleteSoftware}>
+                                Delete
+                            </Button>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -300,16 +415,46 @@ export default function SoftwareContent() {
                             <th className="px-6 py-3">Total Seats</th>
                             <th className="px-6 py-3">Available</th>
                             <th className="px-6 py-3">Allocated</th>
+                            <th className="px-6 py-3 text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {licenses.map(sw => (
                             <tr key={sw.id} className="bg-white border-b border-b-gray-200 hover:bg-gray-50">
-                                <td className="px-6 py-4 font-medium text-blue-600 hover:underline cursor-pointer">{sw.name}</td>
+                                <td
+                                    className="px-6 py-4 font-medium text-blue-600 hover:underline cursor-pointer"
+                                    onClick={() => openEditModal(sw)}
+                                >
+                                    {sw.name}
+                                </td>
                                 <td className="px-6 py-4">{sw.publisher}</td>
                                 <td className="px-6 py-4">{sw.count_total}</td>
                                 <td className="px-6 py-4">{sw.count_available}</td>
                                 <td className="px-6 py-4">{sw.count_utilized}</td>
+                                
+                                <td className="px-6 py-4 text-right">
+                                    <div className="flex justify-end space-x-2">
+                                        <Button
+                                            size="sm"
+                                            icon={Edit}
+                                            onClick={() => openEditModal(sw)}
+                                        >
+                                            Edit
+                                        </Button>
+
+                                        <Button
+                                            size="sm"
+                                            icon={Trash2}
+                                            variant="danger"
+                                            onClick={() => {
+                                                setActiveSoftware(sw);
+                                                setShowDeleteConfirm(true);
+                                            }}
+                                        >
+                                            Delete
+                                        </Button>
+                                    </div>
+                                </td>
                             </tr>
                         ))}
                     </tbody>
