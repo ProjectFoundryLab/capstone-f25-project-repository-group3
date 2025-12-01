@@ -25,6 +25,10 @@ export default function UsersContent() {
         managed_by: ""
     })
 
+    // ---------- NEW STATE FOR ASSETS ----------
+    const [showAssetsModal, setShowAssetsModal] = useState(false)
+    const [userAssets, setUserAssets] = useState([])
+
     useEffect(() => {
         fetchUsers()
         fetchDepartments()
@@ -166,6 +170,23 @@ export default function UsersContent() {
         }
     }
 
+    // ---------- FETCH USER ASSETS ----------
+    async function fetchUserAssets(personId) {
+        try {
+            const { data, error } = await supabase
+                .from("v_assets_detailed")
+                .select("*")
+                .eq("person_id", personId)
+
+            if (error) throw error
+
+            setUserAssets(data)
+            setShowAssetsModal(true)
+        } catch (err) {
+            setError(err.message)
+        }
+    }
+
     const buttons = () => (
         <div className="flex space-x-2">
             <Button icon={PlusCircle} onClick={() => setShowModal(true)}>
@@ -197,8 +218,11 @@ export default function UsersContent() {
                         <tbody>
                             {users.map(user => (
                                 <tr key={user.id} className="bg-white border-b border-gray-200 hover:bg-gray-50">
-                                    <td className="px-6 py-4 font-medium text-blue-600 hover:underline cursor-pointer">
-                                        {user.first_name + " " + user.last_name}
+                                    <td
+                                        className="px-6 py-4 font-medium text-blue-600 hover:underline cursor-pointer"
+                                        onClick={() => fetchUserAssets(user.id)}
+                                    >
+                                        {user.first_name} {user.last_name}
                                     </td>
                                     <td className="px-6 py-4">{user.email}</td>
                                     <td className="px-6 py-4">{user.department_name}</td>
@@ -447,6 +471,46 @@ export default function UsersContent() {
                             </div>
 
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* ---------- Assets Assigned Modal ---------- */}
+            {showAssetsModal && (
+                <div className="fixed inset-0 bg-black/80 flex justify-center items-center z-50">
+                    <div className="bg-white p-6 rounded-lg shadow-xl border w-full max-w-2xl">
+                        
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-lg font-semibold">Assigned Assets</h2>
+                            <button onClick={() => setShowAssetsModal(false)}>
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {userAssets.length === 0 ? (
+                            <p className="text-gray-600">No assets assigned.</p>
+                        ) : (
+                            <table className="w-full text-sm text-left text-gray-600">
+                                <thead className="bg-gray-50 text-xs uppercase text-gray-700">
+                                    <tr>
+                                        <th className="px-4 py-2">Asset Tag</th>
+                                        <th className="px-4 py-2">Model</th>
+                                        <th className="px-4 py-2">State</th>
+                                        <th className="px-4 py-2">Condition</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {userAssets.map((a) => (
+                                        <tr key={a.id} className="border-b border-b-gray-200 hover:bg-gray-50">
+                                            <td className="px-4 py-2">{a.asset_tag}</td>
+                                            <td className="px-4 py-2">{a.model_name}</td>
+                                            <td className="px-4 py-2">{a.state}</td>
+                                            <td className="px-4 py-2">{a.condition}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
                     </div>
                 </div>
             )}
