@@ -4,6 +4,7 @@ import { QrCode, X } from "lucide-react";
 import { Html5Qrcode } from "html5-qrcode";
 import Button from "./Button";
 import { signOut } from "../lib/auth";
+import { useNavigate } from "react-router-dom";
 
 export default function QRScanner({ isMobileView = false }) {
     const [showScanner, setShowScanner] = useState(false);
@@ -17,11 +18,16 @@ export default function QRScanner({ isMobileView = false }) {
         setShowScanner(true);
     };
 
+    const navigate = useNavigate();
+
     const handleSignOut = async () => {
         try {
             await signOut();
+            navigate('/auth');
         } catch (err) {
             console.error("Error signing out", err);
+            // navigate anyway to mirror existing sign-out behavior
+            navigate('/auth');
         }
     };
 
