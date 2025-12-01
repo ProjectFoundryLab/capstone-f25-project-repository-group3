@@ -40,7 +40,10 @@ export default function AssetsContent() {
         cost: "",
         notes: "",
         location_id: "",
+        state: "in_stock",
+        condition: "excellent",
     });
+
 
     const [editForm, setEditForm] = useState({
         state: "",
@@ -243,12 +246,13 @@ export default function AssetsContent() {
                     currency: "USD",
                     notes: form.notes || null,
                     location_id: form.location_id || null,
-                    state: "in_use",
-                    condition: "excellent",
+                    state: form.state,
+                    condition: form.condition,
                 }
             ])
             .select()
             .single();
+
 
         if (insertError) {
             alert("Error creating asset: " + insertError.message);
@@ -531,6 +535,40 @@ export default function AssetsContent() {
                                             {p.first_name} {p.last_name}
                                         </option>
                                     ))}
+                                </select>
+                            </div>
+
+                            {/* STATE */}
+                            <div>
+                                <label className="block text-sm">State</label>
+                                <select
+                                    name="state"
+                                    value={form.state}
+                                    onChange={handleChange}
+                                    className="w-full border p-2 rounded"
+                                >
+                                    <option value="in_use">In Use</option>
+                                    <option value="in_stock">In Stock</option>
+                                    <option value="maintenance">Maintenance</option>
+                                    <option value="retired">Retired</option>
+                                    <option value="lost">Lost</option>
+                                </select>
+                            </div>
+
+                            {/* CONDITION */}
+                            <div>
+                                <label className="block text-sm">Condition</label>
+                                <select
+                                    name="condition"
+                                    value={form.condition}
+                                    onChange={handleChange}
+                                    className="w-full border p-2 rounded"
+                                >
+                                    <option value="excellent">Excellent</option>
+                                    <option value="good">Good</option>
+                                    <option value="fair">Fair</option>
+                                    <option value="poor">Poor</option>
+                                    <option value="unknown">Unknown</option>
                                 </select>
                             </div>
 
