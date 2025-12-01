@@ -83,11 +83,11 @@ export default function CommonView(props) {
   return (
     // Make the layout full-height so the right column can scroll internally
     <div className='flex flex-row bg-gray-100 h-screen'>
-      <MenuBar currentPage={props.currentPage} setCurrentPage={props.setCurrentPage} />
+      <MenuBar currentPage={props.currentPage} setCurrentPage={props.setCurrentPage} className="hidden lg:block" />
       {/* Right column: fixed height column with header (Ribbon) and scrollable main */}
       <div className='flex-grow flex flex-col overflow-hidden'>
         <Ribbon />
-        <main className="flex-1 p-6 overflow-auto">
+        <main className="flex-1 p-6 overflow-auto hidden lg:block">
           {renderPage()}
         </main>
       </div>

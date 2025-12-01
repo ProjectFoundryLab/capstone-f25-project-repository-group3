@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import AuthPage from './pages/AuthPage'
 import CommonView from './components/CommonView'
+import QRScanner from './components/QRScanner'
 import PrivateRoute from './components/PrivateRoute'
 import { useState } from 'react'
 
@@ -15,7 +16,14 @@ export default function App() {
           path="/"
           element={
             <PrivateRoute>
-              <CommonView currentPage={currentPage} setCurrentPage={setCurrentPage} />
+              {/* Mobile/Tablet View: Only QR Scanner */}
+              <div className="lg:hidden w-full h-screen bg-slate-900 flex items-center justify-center">
+                <QRScanner isMobileView={true} />
+              </div>
+              {/* Desktop View: Full Application */}
+              <div className="hidden lg:block">
+                <CommonView currentPage={currentPage} setCurrentPage={setCurrentPage} />
+              </div>
             </PrivateRoute>
           }
         />
