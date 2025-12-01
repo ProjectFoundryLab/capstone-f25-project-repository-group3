@@ -1,7 +1,9 @@
 import {
     HardDrive,
     PlusCircle,
-    X
+    X,
+    Edit,
+    Trash2
 } from "lucide-react";
 import WindowSection from "../components/WindowSection";
 import Tag from "../components/Tag";
@@ -17,6 +19,9 @@ export default function AssetsContent() {
     const [error, setError] = useState(null);
 
     const [showForm, setShowForm] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [activeAsset, setActiveAsset] = useState(null);
 
     const [models, setModels] = useState([]);
     const [categories, setCategories] = useState([]);
@@ -35,6 +40,13 @@ export default function AssetsContent() {
         cost: "",
         notes: "",
         location_id: "",
+    });
+
+    const [editForm, setEditForm] = useState({
+        state: "",
+        condition: "",
+        person_id: "",
+        department_id: "",
     });
 
     const [showModelForm, setShowModelForm] = useState(false);
@@ -116,6 +128,17 @@ export default function AssetsContent() {
     function handleModelChange(e) {
         const { name, value } = e.target;
         setModelForm(prev => ({ ...prev, [name]: value }));
+    }
+
+    function handleEditChange(e) {
+        const { name, value } = e.target;
+        setEditForm(prev => ({ ...prev, [name]: value }));
+
+        if (name === "department_id") {
+            setFilteredPeople(
+                people.filter(p => p.department_id === value)
+            );
+        }
     }
 
     async function submitModel() {
@@ -272,6 +295,142 @@ export default function AssetsContent() {
 
         setShowForm(false);
         await fetchAssets();
+    }
+
+    async function openEditModal(asset) {
+        setActiveAsset(asset);
+        
+        // Get current assignment
+        const { data: assignments } = await supabase
+            .from("asset_assignments")
+            .select("*")
+            .eq("asset_id", asset.id)
+            .is("returned_at", null)
+            .limit(1);
+
+        const currentAssignment = assignments && assignments.length > 0 ? assignments[0] : null;
+
+        setEditForm({
+            state: asset.state || "",
+            condition: asset.condition || "",
+            person_id: currentAssignment?.person_id || "",
+            department_id: currentAssignment?.type === "user" && currentAssignment?.person_id 
+                ? people.find(p => p.id === currentAssignment.person_id)?.department_id || ""
+                : "",
+        });
+
+        // Filter people by department if there's a current assignment
+        if (currentAssignment?.person_id) {
+            const person = people.find(p => p.id === currentAssignment.person_id);
+            if (person?.department_id) {
+                setFilteredPeople(people.filter(p => p.department_id === person.department_id));
+            }
+        }
+
+        setShowEditModal(true);
+    }
+
+    async function submitEditForm() {
+        if (!activeAsset) return;
+
+        try {
+            // Update asset state and condition
+            const { error: updateError } = await supabase
+                .from("assets")
+                .update({
+                    state: editForm.state,
+                    condition: editForm.condition,
+                })
+                .eq("id", activeAsset.id);
+
+            if (updateError) throw updateError;
+
+            // Handle assignment changes
+            // First, get current assignment
+            const { data: currentAssignments } = await supabase
+                .from("asset_assignments")
+                .select("*")
+                .eq("asset_id", activeAsset.id)
+                .is("returned_at", null);
+
+            const currentAssignment = currentAssignments && currentAssignments.length > 0 ? currentAssignments[0] : null;
+
+            // If person_id changed
+            if (editForm.person_id !== (currentAssignment?.person_id || "")) {
+                // Return old assignment if exists
+                if (currentAssignment) {
+                    await supabase
+                        .from("asset_assignments")
+                        .update({ returned_at: new Date().toISOString() })
+                        .eq("id", currentAssignment.id);
+                }
+
+                // Create new assignment if person selected
+                if (editForm.person_id) {
+                    await supabase
+                        .from("asset_assignments")
+                        .insert([{
+                            asset_id: activeAsset.id,
+                            type: "user",
+                            person_id: editForm.person_id
+                        }]);
+                }
+            }
+
+            // Regenerate QR code with updated info
+            const { data: detailed } = await supabase
+                .from("v_assets_detailed")
+                .select("*")
+                .eq("id", activeAsset.id)
+                .single();
+
+            if (detailed) {
+                try {
+                    const qrUrl = await uploadQrCode(detailed);
+                    if (qrUrl) {
+                        await supabase
+                            .from("assets")
+                            .update({ qr_code_url: qrUrl })
+                            .eq("id", activeAsset.id);
+                    }
+                } catch (err) {
+                    console.error("QR code update failed:", err);
+                }
+            }
+
+            setShowEditModal(false);
+            setActiveAsset(null);
+            await fetchAssets();
+        } catch (err) {
+            alert("Error updating asset: " + err.message);
+        }
+    }
+
+    async function handleDeleteAsset() {
+        if (!activeAsset) return;
+
+        try {
+            // Return any active assignments first
+            await supabase
+                .from("asset_assignments")
+                .update({ returned_at: new Date().toISOString() })
+                .eq("asset_id", activeAsset.id)
+                .is("returned_at", null);
+
+            // Delete the asset
+            const { error } = await supabase
+                .from("assets")
+                .delete()
+                .eq("id", activeAsset.id);
+
+            if (error) throw error;
+
+            setShowDeleteConfirm(false);
+            setActiveAsset(null);
+            await fetchAssets();
+        } catch (err) {
+            alert("Error deleting asset: " + err.message);
+        }
     }
 
     function getStatusColor(status) {
@@ -518,6 +677,7 @@ export default function AssetsContent() {
                             <th className="px-6 py-3">Category</th>
                             <th className="px-6 py-3">Status</th>
                             <th className="px-6 py-3">Assigned To</th>
+                            <th className="px-6 py-3"></th>
                         </tr>
                     </thead>
 
@@ -541,12 +701,154 @@ export default function AssetsContent() {
                                         </span>
                                     )}
                                 </td>
+                                <td className="px-6 py-4">
+                                    <div className="flex items-center space-x-2">
+                                        <Button size="sm" icon={Edit} onClick={() => openEditModal(asset)}>
+                                            Edit
+                                        </Button>
+                                        <Button size="sm" variant="danger" icon={Trash2} onClick={() => {
+                                            setActiveAsset(asset);
+                                            setShowDeleteConfirm(true);
+                                        }}>
+                                            Delete
+                                        </Button>
+                                    </div>
+                                </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
 
             </WindowSection>
+
+            {/* EDIT ASSET MODAL */}
+            {showEditModal && activeAsset && (
+                <div className="fixed inset-0 bg-black/80 flex justify-center items-center z-50">
+                    <div className="bg-white p-6 rounded-lg w-full max-w-lg shadow-xl border">
+
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-lg font-semibold">Edit Asset — {activeAsset.asset_tag}</h2>
+                            <button onClick={() => setShowEditModal(false)}>
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="space-y-3">
+
+                            {/* STATE */}
+                            <div>
+                                <label className="block text-sm">State</label>
+                                <select
+                                    name="state"
+                                    value={editForm.state}
+                                    onChange={handleEditChange}
+                                    className="w-full border p-2 rounded"
+                                >
+                                    <option value="in_use">In Use</option>
+                                    <option value="in_stock">In Stock</option>
+                                    <option value="maintenance">Maintenance</option>
+                                    <option value="retired">Retired</option>
+                                    <option value="lost">Lost</option>
+                                </select>
+                            </div>
+
+                            {/* CONDITION */}
+                            <div>
+                                <label className="block text-sm">Condition</label>
+                                <select
+                                    name="condition"
+                                    value={editForm.condition}
+                                    onChange={handleEditChange}
+                                    className="w-full border p-2 rounded"
+                                >
+                                    <option value="excellent">Excellent</option>
+                                    <option value="good">Good</option>
+                                    <option value="fair">Fair</option>
+                                    <option value="poor">Poor</option>
+                                    <option value="unknown">Unknown</option>
+                                </select>
+                            </div>
+
+                            {/* DEPARTMENT */}
+                            <div>
+                                <label className="block text-sm">Department</label>
+                                <select
+                                    name="department_id"
+                                    value={editForm.department_id}
+                                    onChange={handleEditChange}
+                                    className="w-full border p-2 rounded"
+                                >
+                                    <option value="">Select Department</option>
+                                    {departments.map(d => (
+                                        <option key={d.id} value={d.id}>
+                                            {d.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* PERSON */}
+                            <div>
+                                <label className="block text-sm">Assign To</label>
+                                <select
+                                    name="person_id"
+                                    value={editForm.person_id}
+                                    onChange={handleEditChange}
+                                    disabled={!editForm.department_id}
+                                    className="w-full border p-2 rounded disabled:bg-gray-100"
+                                >
+                                    <option value="">Unassigned</option>
+                                    {filteredPeople.map(p => (
+                                        <option key={p.id} value={p.id}>
+                                            {p.first_name} {p.last_name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="flex justify-end space-x-2 pt-2">
+                                <Button variant="ghost" onClick={() => setShowEditModal(false)}>
+                                    Cancel
+                                </Button>
+                                <Button onClick={submitEditForm}>
+                                    Save Changes
+                                </Button>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* DELETE CONFIRMATION MODAL */}
+            {showDeleteConfirm && activeAsset && (
+                <div className="fixed inset-0 bg-black/80 flex justify-center items-center z-50">
+                    <div className="bg-white p-6 rounded-lg w-full max-w-lg shadow-xl border">
+
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-lg font-semibold">Delete Asset</h2>
+                            <button onClick={() => setShowDeleteConfirm(false)}>
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            <p className="text-sm text-gray-700">
+                                Are you sure you want to delete <strong>{activeAsset.asset_tag}</strong>? This action cannot be undone.
+                            </p>
+
+                            <div className="flex justify-end space-x-2">
+                                <Button variant="ghost" onClick={() => setShowDeleteConfirm(false)}>
+                                    Cancel
+                                </Button>
+                                <Button variant="danger" icon={Trash2} onClick={handleDeleteAsset}>
+                                    Confirm Delete
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

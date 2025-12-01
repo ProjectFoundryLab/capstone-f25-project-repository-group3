@@ -1,5 +1,5 @@
 import Button from "../components/Button"
-import { PlusCircle, Users, Edit, Trash2 } from "lucide-react"
+import { PlusCircle, Users, Edit, Trash2, X } from "lucide-react"
 import WindowSection from "../components/WindowSection";
 import { supabase } from "../lib/supabaseClient";
 import { useState, useEffect } from "react";
@@ -191,7 +191,7 @@ export default function UsersContent() {
                                 <th className="px-6 py-3">Department</th>
                                 <th className="px-6 py-3">Role</th>
                                 <th className="px-6 py-3">Manager</th>
-                                <th className="px-6 py-3">Actions</th>
+                                <th className="px-6 py-3"></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -204,21 +204,15 @@ export default function UsersContent() {
                                     <td className="px-6 py-4">{user.department_name}</td>
                                     <td className="px-6 py-4">{user.user_type}</td>
                                     <td className="px-6 py-4">{user.managed_by || ""}</td>
-                                    <td className="px-6 py-4 space-x-2">
-                                        <button
-                                            onClick={() => openEditModal(user)}
-                                            className="inline-flex items-center justify-center p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                                            title="Edit user"
-                                        >
-                                            <Edit size={18} />
-                                        </button>
-                                        <button
-                                            onClick={() => deleteUser(user.id)}
-                                            className="inline-flex items-center justify-center p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
-                                            title="Delete user"
-                                        >
-                                            <Trash2 size={18} />
-                                        </button>
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center space-x-2">
+                                            <Button size="sm" icon={Edit} onClick={() => openEditModal(user)}>
+                                                Edit
+                                            </Button>
+                                            <Button size="sm" variant="danger" icon={Trash2} onClick={() => deleteUser(user.id)}>
+                                                Delete
+                                            </Button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -230,8 +224,14 @@ export default function UsersContent() {
             {/* ---------- Add User Modal ---------- */}
             {showModal && (
                 <div className="fixed inset-0 bg-black/80 flex justify-center items-center z-50">
-                    <div className="bg-white p-6 rounded-lg shadow-lg w-96">
-                        <h2 className="text-xl font-semibold mb-4">Add New User</h2>
+                    <div className="bg-white p-6 rounded-lg shadow-xl border w-full max-w-lg">
+                        
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-lg font-semibold">Add New User</h2>
+                            <button onClick={() => setShowModal(false)}>
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
 
                         <form onSubmit={addUser} className="space-y-3">
 
@@ -323,9 +323,13 @@ export default function UsersContent() {
                                 </select>
                             )}
 
-                            <div className="flex justify-end space-x-2 mt-4">
-                                <Button onClick={() => setShowModal(false)}>Cancel</Button>
-                                <Button icon={PlusCircle} type="submit">Add User</Button>
+                            <div className="flex justify-end space-x-2 pt-2">
+                                <Button variant="ghost" onClick={() => setShowModal(false)}>
+                                    Cancel
+                                </Button>
+                                <Button icon={PlusCircle} type="submit">
+                                    Add User
+                                </Button>
                             </div>
 
                         </form>
@@ -336,8 +340,14 @@ export default function UsersContent() {
             {/* ---------- Edit User Modal ---------- */}
             {editModal && currentUser && (
                 <div className="fixed inset-0 bg-black/80 flex justify-center items-center z-50">
-                    <div className="bg-white p-6 rounded-lg shadow-lg w-96">
-                        <h2 className="text-xl font-semibold mb-4">Edit User</h2>
+                    <div className="bg-white p-6 rounded-lg shadow-xl border w-full max-w-lg">
+                        
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-lg font-semibold">Edit User</h2>
+                            <button onClick={() => setEditModal(false)}>
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
 
                         <form onSubmit={updateUser} className="space-y-3">
 
@@ -427,9 +437,13 @@ export default function UsersContent() {
                                 </select>
                             )}
 
-                            <div className="flex justify-end space-x-2 mt-4">
-                                <Button onClick={() => setEditModal(false)}>Cancel</Button>
-                                <Button type="submit">Save Changes</Button>
+                            <div className="flex justify-end space-x-2 pt-2">
+                                <Button variant="ghost" onClick={() => setEditModal(false)}>
+                                    Cancel
+                                </Button>
+                                <Button type="submit">
+                                    Save Changes
+                                </Button>
                             </div>
 
                         </form>
