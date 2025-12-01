@@ -32,7 +32,7 @@ In order to use our application you need to be issued login credentials. Once yo
     <img width="2415" height="1200" alt="image" src="https://github.com/user-attachments/assets/04e1ccd4-6b32-42dc-bc96-040ec4f99740" />
 
 **QR Code Scanner:**<br>
-The QR code scanner is the only feature allowed on mobile and tablet views and is used to scan QR codes generate by this application. Any other code will display an error.
+The QR code scanner is the only feature allowed on mobile and tablet views and is used to scan QR codes generate by this application. Any other code will display an error.<br>
 <img width="288" height="109" alt="image" src="https://github.com/user-attachments/assets/3fdba99d-3cd1-48f8-b7c4-76fb65fc3745" />
 <img width="883" height="1271" alt="image" src="https://github.com/user-attachments/assets/b0ee6fc7-e3a2-4ec0-909e-6888d974e47e" />
 <img width="862" height="1160" alt="image" src="https://github.com/user-attachments/assets/8b4c2e6d-143f-4e68-8dc9-ff9f9391523b" />
