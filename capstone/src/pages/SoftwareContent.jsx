@@ -1,4 +1,4 @@
-import { Package, PlusCircle, Edit, Trash2 } from "lucide-react";
+import { Package, PlusCircle, Edit, Trash2, MinusCircle } from "lucide-react";
 import WindowSection from "../components/WindowSection";
 import Button from "../components/Button";
 import { useState, useEffect } from "react";
@@ -13,6 +13,7 @@ export default function SoftwareContent() {
     const [showNewSoftware, setShowNewSoftware] = useState(false);
     const [showAddLicenses, setShowAddLicenses] = useState(false);
     const [showAssignLicense, setShowAssignLicense] = useState(false);
+    const [showUnassignModal, setShowUnassignModal] = useState(false);
 
     // Edit + Delete modal states
     const [showEditModal, setShowEditModal] = useState(false);
@@ -30,11 +31,16 @@ export default function SoftwareContent() {
     const [assignPersonId, setAssignPersonId] = useState("");
     const [assignAvailable, setAssignAvailable] = useState(null);
 
+    // Unassign modal state
+    const [unassignSoftwareId, setUnassignSoftwareId] = useState("");
+    const [assignments, setAssignments] = useState([]);
+    const [loadingAssignments, setLoadingAssignments] = useState(false);
+
     useEffect(() => {
         fetchLicenses();
         fetchPeople();
     }, []);
-    
+
     async function fetchLicenses() {
         try {
             const { data, error } = await supabase
@@ -70,8 +76,7 @@ export default function SoftwareContent() {
             .insert({
                 name: newName,
                 publisher: newPublisher,
-                count_available: 0,
-                count_utilized: 0
+                total_licenses: 0
             });
 
         if (error) {
@@ -123,6 +128,49 @@ export default function SoftwareContent() {
         setAssignPersonId("");
         setAssignAvailable(null);
 
+        fetchLicenses();
+    }
+
+    // --- Fetch assignments for a software (for Unassign modal) ---
+    async function fetchAssignmentsForSoftware(softwareId) {
+        if (!softwareId) {
+            setAssignments([]);
+            return;
+        }
+
+        setLoadingAssignments(true);
+        const { data, error } = await supabase
+            .from("software_assignments")
+            .select("id, person_id, people ( first_name, last_name )")
+            .eq("software_id", softwareId);
+
+        setLoadingAssignments(false);
+
+        if (error) {
+            setError(error.message);
+            setAssignments([]);
+            return;
+        }
+
+        setAssignments(data || []);
+    }
+
+    // --- Unassign license (delete assignment row) ---
+    async function handleUnassign(assignmentId) {
+        const { error } = await supabase
+            .from("software_assignments")
+            .delete()
+            .eq("id", assignmentId);
+
+        if (error) {
+            setError(error.message);
+            return;
+        }
+
+        // Remove from local list
+        setAssignments((prev) => prev.filter((a) => a.id !== assignmentId));
+
+        // Refresh summary counts
         fetchLicenses();
     }
 
@@ -185,6 +233,10 @@ export default function SoftwareContent() {
             <Button icon={PlusCircle} onClick={() => setShowAssignLicense(true)}>
                 Assign License
             </Button>
+
+            <Button icon={MinusCircle} onClick={() => setShowUnassignModal(true)}>
+                Unassign License
+            </Button>
         </div>
     );
 
@@ -193,16 +245,17 @@ export default function SoftwareContent() {
             {/* ------------------------ Add Software Modal ------------------------ */}
             {showNewSoftware && (
                 <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-                    <form className="bg-white p-6 rounded-lg shadow-lg w-96"
-                        onSubmit={createSoftware}>
-                        
+                    <form
+                        className="bg-white p-6 rounded-lg shadow-lg w-96"
+                        onSubmit={createSoftware}
+                    >
                         <h2 className="text-lg font-semibold mb-4">Add Software</h2>
 
                         <label className="block mb-2 text-sm">Name</label>
                         <input
                             className="w-full p-2 rounded bg-gray-100 mb-4"
                             value={newName}
-                            onChange={e => setNewName(e.target.value)}
+                            onChange={(e) => setNewName(e.target.value)}
                             required
                         />
 
@@ -210,7 +263,7 @@ export default function SoftwareContent() {
                         <input
                             className="w-full p-2 rounded bg-gray-100 mb-4"
                             value={newPublisher}
-                            onChange={e => setNewPublisher(e.target.value)}
+                            onChange={(e) => setNewPublisher(e.target.value)}
                         />
 
                         <div className="flex justify-end mt-4 space-x-2">
@@ -230,15 +283,13 @@ export default function SoftwareContent() {
                         className="bg-white p-6 rounded-lg shadow-lg w-96"
                         onSubmit={updateSoftware}
                     >
-                        <h2 className="text-lg font-semibold mb-4">
-                            Edit Software
-                        </h2>
+                        <h2 className="text-lg font-semibold mb-4">Edit Software</h2>
 
                         <label className="block mb-2 text-sm">Name</label>
                         <input
                             className="w-full p-2 rounded bg-gray-100 mb-4"
                             value={newName}
-                            onChange={e => setNewName(e.target.value)}
+                            onChange={(e) => setNewName(e.target.value)}
                             required
                         />
 
@@ -246,15 +297,17 @@ export default function SoftwareContent() {
                         <input
                             className="w-full p-2 rounded bg-gray-100 mb-4"
                             value={newPublisher}
-                            onChange={e => setNewPublisher(e.target.value)}
+                            onChange={(e) => setNewPublisher(e.target.value)}
                         />
 
                         <div className="flex justify-end mt-4 space-x-2">
-                            <Button type="button"
+                            <Button
+                                type="button"
                                 onClick={() => {
                                     setShowEditModal(false);
                                     setActiveSoftware(null);
-                                }}>
+                                }}
+                            >
                                 Cancel
                             </Button>
                             <Button type="submit">Save</Button>
@@ -291,20 +344,21 @@ export default function SoftwareContent() {
             {/* ------------------------ Add Licenses Modal ------------------------ */}
             {showAddLicenses && (
                 <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-                    <form className="bg-white p-6 rounded-lg shadow-lg w-96"
-                        onSubmit={addLicenses}>
-
+                    <form
+                        className="bg-white p-6 rounded-lg shadow-lg w-96"
+                        onSubmit={addLicenses}
+                    >
                         <h2 className="text-lg font-semibold mb-4">Add Licenses</h2>
 
                         <label className="block mb-2 text-sm">Software</label>
                         <select
                             className="w-full p-2 rounded bg-gray-100 mb-4"
                             value={selectedSoftware}
-                            onChange={e => setSelectedSoftware(e.target.value)}
+                            onChange={(e) => setSelectedSoftware(e.target.value)}
                             required
                         >
                             <option value="">Select...</option>
-                            {licenses.map(l => (
+                            {licenses.map((l) => (
                                 <option key={l.id} value={l.id}>
                                     {l.name} ({l.publisher})
                                 </option>
@@ -317,12 +371,17 @@ export default function SoftwareContent() {
                             className="w-full p-2 rounded bg-gray-100 mb-4"
                             min="1"
                             value={licenseAmount}
-                            onChange={e => setLicenseAmount(Number(e.target.value))}
+                            onChange={(e) =>
+                                setLicenseAmount(Number(e.target.value))
+                            }
                             required
                         />
 
                         <div className="flex justify-end mt-4 space-x-2">
-                            <Button type="button" onClick={() => setShowAddLicenses(false)}>
+                            <Button
+                                type="button"
+                                onClick={() => setShowAddLicenses(false)}
+                            >
                                 Cancel
                             </Button>
                             <Button type="submit">Add</Button>
@@ -368,7 +427,13 @@ export default function SoftwareContent() {
                         {assignAvailable !== null && (
                             <div className="text-sm text-gray-600 mb-4">
                                 Available Seats:{" "}
-                                <span className={assignAvailable > 0 ? "text-green-600" : "text-red-600"}>
+                                <span
+                                    className={
+                                        assignAvailable > 0
+                                            ? "text-green-600"
+                                            : "text-red-600"
+                                    }
+                                >
                                     {assignAvailable}
                                 </span>
                             </div>
@@ -390,7 +455,10 @@ export default function SoftwareContent() {
                         </select>
 
                         <div className="flex justify-end mt-4 space-x-2">
-                            <Button type="button" onClick={() => setShowAssignLicense(false)}>
+                            <Button
+                                type="button"
+                                onClick={() => setShowAssignLicense(false)}
+                            >
                                 Cancel
                             </Button>
                             <Button type="submit" disabled={assignAvailable === 0}>
@@ -398,6 +466,90 @@ export default function SoftwareContent() {
                             </Button>
                         </div>
                     </form>
+                </div>
+            )}
+
+            {/* ------------------------ Unassign License Modal ------------------------ */}
+            {showUnassignModal && (
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-lg shadow-lg w-[32rem] max-h-[80vh] overflow-y-auto">
+                        <h2 className="text-lg font-semibold mb-4">Unassign License</h2>
+
+                        <label className="block mb-2 text-sm">Software</label>
+                        <select
+                            className="w-full p-2 rounded bg-gray-100 mb-4"
+                            value={unassignSoftwareId}
+                            onChange={async (e) => {
+                                const id = e.target.value;
+                                setUnassignSoftwareId(id);
+                                await fetchAssignmentsForSoftware(id);
+                            }}
+                        >
+                            <option value="">Select...</option>
+                            {licenses.map((l) => (
+                                <option key={l.id} value={l.id}>
+                                    {l.name} ({l.publisher})
+                                </option>
+                            ))}
+                        </select>
+
+                        {loadingAssignments && (
+                            <div className="text-sm text-gray-600 mb-2">
+                                Loading assignments...
+                            </div>
+                        )}
+
+                        {!loadingAssignments && unassignSoftwareId && assignments.length === 0 && (
+                            <div className="text-sm text-gray-600 mb-2">
+                                No active assignments for this software.
+                            </div>
+                        )}
+
+                        {!loadingAssignments && assignments.length > 0 && (
+                            <table className="w-full text-sm text-left text-gray-500 mt-2">
+                                <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+                                    <tr>
+                                        <th className="px-4 py-2">Person</th>
+                                        <th className="px-4 py-2 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {assignments.map((a) => (
+                                        <tr
+                                            key={a.id}
+                                            className="bg-white border-b border-b-gray-200"
+                                        >
+                                            <td className="px-4 py-2">
+                                                {a.people?.first_name} {a.people?.last_name}
+                                            </td>
+                                            <td className="px-4 py-2 text-right">
+                                                <Button
+                                                    size="sm"
+                                                    variant="danger"
+                                                    onClick={() => handleUnassign(a.id)}
+                                                >
+                                                    Unassign
+                                                </Button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
+
+                        <div className="flex justify-end mt-4 space-x-2">
+                            <Button
+                                type="button"
+                                onClick={() => {
+                                    setShowUnassignModal(false);
+                                    setUnassignSoftwareId("");
+                                    setAssignments([]);
+                                }}
+                            >
+                                Close
+                            </Button>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -419,8 +571,11 @@ export default function SoftwareContent() {
                         </tr>
                     </thead>
                     <tbody>
-                        {licenses.map(sw => (
-                            <tr key={sw.id} className="bg-white border-b border-b-gray-200 hover:bg-gray-50">
+                        {licenses.map((sw) => (
+                            <tr
+                                key={sw.id}
+                                className="bg-white border-b border-b-gray-200 hover:bg-gray-50"
+                            >
                                 <td
                                     className="px-6 py-4 font-medium text-blue-600 hover:underline cursor-pointer"
                                     onClick={() => openEditModal(sw)}
@@ -431,7 +586,7 @@ export default function SoftwareContent() {
                                 <td className="px-6 py-4">{sw.count_total}</td>
                                 <td className="px-6 py-4">{sw.count_available}</td>
                                 <td className="px-6 py-4">{sw.count_utilized}</td>
-                                
+
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex justify-end space-x-2">
                                         <Button
