@@ -12,7 +12,6 @@ export default function DashboardContent() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // --- license summary state ---
     const [licenseMetrics, setLicenseMetrics] = useState([]);
     const [licenseError, setLicenseError] = useState(null);
 

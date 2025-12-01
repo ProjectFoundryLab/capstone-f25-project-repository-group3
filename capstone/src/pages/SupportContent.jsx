@@ -10,7 +10,7 @@ export default function SupportContent() {
     const [assets, setAssets] = useState([]);
 
     const [formData, setFormData] = useState({
-        asset: "",        // asset_id
+        asset: "",       
         title: "",
         description: "",
         status: "open",

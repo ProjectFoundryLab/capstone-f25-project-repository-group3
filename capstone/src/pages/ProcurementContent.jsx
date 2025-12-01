@@ -4,21 +4,6 @@ import WindowSection from "../components/WindowSection";
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
 
-/**
- * ProcurementContent.jsx
- *
- * Full Procurement page with CRUD UI for:
- * - purchase_orders (PO)
- * - po_lines (line items)
- *
- * Modal style: Option A (centered white box)
- *
- * Notes:
- * - This file follows the existing patterns used across the project (Button, WindowSection, tailwind classes).
- * - All Supabase operations are implemented and refresh the main list via fetchPos().
- * - The PO detail modal contains a PO lines editor (create/edit/delete).
- */
-
 export default function ProcurementContent() {
   // --- main data + ui state ---
   const [pos, setPos] = useState([]);
