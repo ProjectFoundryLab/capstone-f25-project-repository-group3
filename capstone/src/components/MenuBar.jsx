@@ -10,12 +10,15 @@ export default function MenuBar(props) {
         { name: 'Procurement', icon: ShoppingCart, page: 'Procurement' },
         { name: 'Users', icon: Users, page: 'Users' },
         { name: 'Departments', icon: Building, page: 'Departments' },
+        { name: 'Support', icon: LifeBuoy, page: 'Support' },
         { name: 'Maintenance', icon: Wrench, page: 'Maintenance' }
     ];
 
+    /** 
     const helpItems = [
-        { name: 'Support', icon: LifeBuoy, page: 'Support' }
+        
     ];
+    */
 
     const NavLink = ({ item, onClick }) => (
          <a 
@@ -41,9 +44,6 @@ export default function MenuBar(props) {
             <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
                 {navItems.map(item => <NavLink key={item.name} item={item} onClick={() => props.setCurrentPage(item.name)} />)}
             </nav>
-            <div className="p-2 border-t border-gray-700">
-                 {helpItems.map(item => <NavLink key={item.name} item={item} onClick={() => props.setCurrentPage(item.name)} />)}
-            </div>
         </aside>
     );
 }
